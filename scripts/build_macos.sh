@@ -27,7 +27,7 @@ PLATFORM="Darwin"
 COMPILER="clang"
 
 usage() {
-  echo "Usage: $0 [-t <build_type>] [-a <action>] [-clean] [-interactive] [-j <jobs>] [-xcode] [options]"
+  echo "Usage: $0 [-t <build_type>] [-a <action>] [-clean] [-j <jobs>] [-xcode] [options]"
   echo "  -t <build_type>  Debug|Release|RelWithDebInfo|MinSizeRel"
   echo "  -a <action>      configure|build|configure_and_build|test|xcode|xcode_build"
   echo "  -xcode           Generate Xcode project (vnesc.xcodeproj)"
@@ -41,7 +41,6 @@ usage() {
 BUILD_TYPE="Debug"
 ACTION="configure_and_build"
 CLEAN_BUILD=false
-INTERACTIVE_MODE=false
 GENERATE_XCODE=false
 WITH_DEV=true
 WITH_TESTS=true
@@ -59,7 +58,6 @@ while [[ $# -gt 0 ]]; do
     -t|--build-type) BUILD_TYPE="$2"; shift 2 ;;
     -a|--action) ACTION="$2"; shift 2 ;;
     -clean|--clean) CLEAN_BUILD=true; shift ;;
-    -interactive|--interactive) INTERACTIVE_MODE=true; shift ;;
     -xcode|--xcode) GENERATE_XCODE=true; shift ;;
     -xcode-only|--xcode-only) GENERATE_XCODE=true; ACTION="xcode"; shift ;;
     --dev) WITH_DEV=true; shift ;;
