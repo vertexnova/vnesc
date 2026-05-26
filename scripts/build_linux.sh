@@ -84,8 +84,12 @@ interactive_mode() {
   read -p "Enable --dev (tests+examples)? [Y/n]: " dev_choice
   if [[ ! "$dev_choice" =~ ^[Nn]$ ]]; then
     WITH_DEV=true
-    WITH_TESTS=true
-    WITH_EXAMPLES=true
+  else
+    WITH_DEV=false
+    WITH_TESTS=false
+    WITH_EXAMPLES=false
+    TESTS_EXPLICIT=true
+    EXAMPLES_EXPLICIT=true
   fi
 }
 
@@ -97,6 +101,8 @@ INTERACTIVE_MODE=false
 WITH_DEV=true
 WITH_TESTS=true
 WITH_EXAMPLES=false
+TESTS_EXPLICIT=false
+EXAMPLES_EXPLICIT=false
 WITH_TINT=false
 WITH_SPIRVTOOLS=false
 WITH_GLSLANG=true
@@ -110,11 +116,11 @@ while [[ $# -gt 0 ]]; do
     -c|--compiler) COMPILER="$2"; shift 2 ;;
     -clean|--clean) CLEAN_BUILD=true; shift ;;
     -interactive|--interactive) INTERACTIVE_MODE=true; shift ;;
-    --dev) WITH_DEV=true; WITH_TESTS=true; shift ;;
-    --with-tests) WITH_TESTS=true; shift ;;
-    --no-tests) WITH_TESTS=false; shift ;;
-    --with-examples) WITH_EXAMPLES=true; shift ;;
-    --no-examples) WITH_EXAMPLES=false; shift ;;
+    --dev) WITH_DEV=true; shift ;;
+    --with-tests) WITH_TESTS=true; TESTS_EXPLICIT=true; shift ;;
+    --no-tests) WITH_TESTS=false; TESTS_EXPLICIT=true; shift ;;
+    --with-examples) WITH_EXAMPLES=true; EXAMPLES_EXPLICIT=true; shift ;;
+    --no-examples) WITH_EXAMPLES=false; EXAMPLES_EXPLICIT=true; shift ;;
     --with-tint) WITH_TINT=true; shift ;;
     --with-spirvtools) WITH_SPIRVTOOLS=true; shift ;;
     --no-glslang) WITH_GLSLANG=false; shift ;;
@@ -125,12 +131,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$WITH_DEV" == true ]]; then
-  WITH_TESTS=true
-  WITH_EXAMPLES=true
-fi
-
 [[ "$INTERACTIVE_MODE" == true ]] && interactive_mode
+
+if [[ "$WITH_DEV" == true ]]; then
+  [[ "$TESTS_EXPLICIT" == false ]] && WITH_TESTS=true
+  [[ "$EXAMPLES_EXPLICIT" == false ]] && WITH_EXAMPLES=true
+fi
 
 if [[ "$COMPILER" != "gcc" && "$COMPILER" != "clang" ]]; then
   echo "Unsupported compiler: $COMPILER (use gcc or clang)"
