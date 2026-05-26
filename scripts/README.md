@@ -1,49 +1,82 @@
-# VneTemplate Scripts
+# vnesc Scripts
 
-Build scripts for macOS, Linux, and Windows.
+Build helpers for **desktop platforms only**: Linux, macOS, and Windows.
 
-## Build Scripts
+vnesc is a static shader-compiler library. Scripts pass `VNE_SC_*` CMake options (not `VNE_TEMPLATE_*` or `VNE_RHI_*`).
+
+## Quick start
+
+```bash
+# Linux / macOS — dev build with tests (default)
+./scripts/build_linux.sh --dev -a test
+./scripts/build_macos.sh --dev -a test
+
+# Windows (Developer Command Prompt)
+python scripts/build_windows.py --dev -a test
+```
+
+## Build layout
+
+```
+build/<BuildType>/build-<platform>-<compiler>/
+```
+
+Examples:
+
+- `build/Debug/build-linux-gcc-13.2.0/`
+- `build/Release/build-macos-clang-16.0.0/`
+- `build/Debug/build-windows-msvc/`
+
+## Common CMake flags (via script options)
+
+| Script flag | CMake option |
+|-------------|----------------|
+| `--dev` | `VNE_SC_DEV=ON` (also enables tests + examples) |
+| `--with-tests` / `--no-tests` | `VNE_SC_TESTS` |
+| `--with-examples` / `--no-examples` | `VNE_SC_EXAMPLES` |
+| `--with-tint` | `VNE_SC_TINT=ON` (Dawn; slow first configure) |
+| `--with-spirvtools` | `VNE_SC_SPIRVTOOLS=ON` |
+| `--no-glslang` | `VNE_SC_GLSLANG=OFF` |
+| `--no-json` | `VNE_SC_JSON=OFF` |
+| `--werror` | `WARNINGS_AS_ERRORS=ON` |
+
+CI uses `-DVNE_SC_CI=ON` directly in GitHub Actions (see `.github/workflows/`).
+
+## Platform scripts
 
 ### Linux (`build_linux.sh`)
 
 ```bash
-./scripts/build_linux.sh -t Debug -a configure_and_build
-./scripts/build_linux.sh -c clang -j 20 -t Release
-./scripts/build_linux.sh -interactive
-./scripts/build_linux.sh -clean -t Debug
+./scripts/build_linux.sh -t Release -c clang -j 16 --dev -a test
+./scripts/build_linux.sh --with-tint -t Debug
 ```
-
-**Options:** `-t` build type, `-c` compiler (gcc|clang), `-a` action (configure|build|configure_and_build|test), `-j` jobs, `-clean`, `-interactive`, `-h`
 
 ### macOS (`build_macos.sh`)
 
 ```bash
-./scripts/build_macos.sh -t Debug -a configure_and_build
-./scripts/build_macos.sh -xcode -t Release
-./scripts/build_macos.sh -xcode-only -t Release
-./scripts/build_macos.sh -interactive
+./scripts/build_macos.sh -t Release --dev -a test
+./scripts/build_macos.sh -xcode -t Debug    # generates vnesc.xcodeproj
 ```
-
-**Options:** `-t` build type, `-a` action, `-xcode` (also generate Xcode project), `-xcode-only`, `-j` jobs, `-clean`, `-interactive`, `-h`
 
 ### Windows
 
-**Bash** (Git Bash / WSL): `build_windows.sh`
+**Python** (recommended):
 
 ```bash
-./scripts/build_windows.sh -t Debug -a configure_and_build
-./scripts/build_windows.sh -j 8 -t Release
+python scripts/build_windows.py -t Release --dev -a test -j 8
 ```
 
-**Python** (recommended on Windows): `build_windows.py`
+**Git Bash:** `build_windows.sh`  
+**PowerShell:** `build_windows.ps1`
 
-Run from a **Visual Studio Developer Command Prompt**:
+Run all Windows scripts from a **Visual Studio Developer Command Prompt**.
+
+## Documentation
 
 ```bash
-python scripts/build_windows.py -t Debug -a configure_and_build
-python scripts/build_windows.py --build-type Release --jobs 8
-python scripts/build_windows.py --interactive
-python scripts/build_windows.py --build-type Release --clean
+./scripts/generate-docs.sh   # requires Doxygen; target vnesc_doc_doxygen
 ```
 
-**Options:** `-t` / `--build-type`, `-a` / `--action`, `-j` / `--jobs`, `--clean`, `--interactive`, `-h`
+## Other utilities
+
+- `clang_formatter.py` — format `src/`, `include/`, `tests/` with project `.clang-format`
