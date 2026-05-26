@@ -204,7 +204,7 @@ struct WorkgroupSize {
 
 /// Reflection data for a single shader stage.
 struct StageReflection {
-    ShaderStage stage;
+    ShaderStage stage = ShaderStage::eVertex;
     std::vector<ReflectedBindingInfo> bindings;
     uint32_t push_constant_size = 0;  ///< Total size of the push-constant block in bytes.
     WorkgroupSize workgroup_size;
