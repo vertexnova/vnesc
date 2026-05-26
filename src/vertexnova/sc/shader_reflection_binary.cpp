@@ -68,6 +68,7 @@ struct Reader {
         }
         return v;
     }
+
     uint32_t u32() {
         if (!ok()) {
             return 0;
@@ -83,6 +84,7 @@ struct Reader {
         }
         return v;
     }
+
     uint32_t bounded_count(uint32_t max_count) {
         const uint32_t count = u32();
         if (!ok()) {
@@ -94,6 +96,7 @@ struct Reader {
         }
         return count;
     }
+
     bool boolean() { return u8() != 0u; }
     std::string str() {
         if (!ok()) {
@@ -121,6 +124,7 @@ struct Reader {
         }
         return s;
     }
+
     bool ok() const { return !is.fail(); }
 };
 
