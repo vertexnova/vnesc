@@ -29,12 +29,17 @@ function(_vne_sc_resolve_dep _name _vendored _override_cache _out_src _out_origi
     set(_src "")
     set(_origin "")
     if(${_override_cache})
-        get_filename_component(_src "${${_override_cache}}" REALPATH)
-        if(NOT EXISTS "${_src}/CMakeLists.txt")
-            message(FATAL_ERROR "${_override_cache} is set but '${_src}' has no CMakeLists.txt")
+        get_filename_component(_override_path "${${_override_cache}}" REALPATH)
+        if(EXISTS "${_override_path}/CMakeLists.txt")
+            set(_src "${_override_path}")
+            set(_origin "local:${_override_path}")
+        else()
+            message(WARNING
+                "vnesc: ${_override_cache}='${${_override_cache}}' has no CMakeLists.txt; "
+                "ignoring override for ${_name}")
         endif()
-        set(_origin "local:${_src}")
-    elseif(EXISTS "${_vendored}/CMakeLists.txt")
+    endif()
+    if(NOT _src AND EXISTS "${_vendored}/CMakeLists.txt")
         set(_src "${_vendored}")
         set(_origin "vendored:${_vendored}")
     endif()
@@ -109,10 +114,15 @@ message(STATUS "vnesc: SPIRV-Cross (${_vne_sc_spirvcross_origin})")
 # glslang  (when VNE_SC_GLSLANG=ON)
 # ══════════════════════════════════════════════════════════════════════════════
 if(VNE_SC_GLSLANG)
-    # SPIRV-Headers — required by both SPIRV-Tools and glslang
+    # SPIRV-Headers — required by glslang (not by SPIRV-Cross / vnesc_spirvcross)
     set(_vne_sc_spirvhdr_vendored "${_vne_sc_repo_root}/deps/external/SPIRV-Headers")
-    set(VNE_SC_SPIRV_HEADERS_DIR
-        "${_vne_sc_spirvhdr_vendored}" CACHE PATH "SPIRV-Headers source root.")
+    if(EXISTS "${_vne_sc_spirvhdr_vendored}/CMakeLists.txt")
+        set(_vne_sc_spirvhdr_dir_init "${_vne_sc_spirvhdr_vendored}")
+    else()
+        set(_vne_sc_spirvhdr_dir_init "")
+    endif()
+    set(VNE_SC_SPIRV_HEADERS_DIR "${_vne_sc_spirvhdr_dir_init}" CACHE PATH
+        "SPIRV-Headers source root. Empty: FetchContent. Default: deps/external/SPIRV-Headers if present.")
     _vne_sc_resolve_dep(SPIRV-Headers
         "${_vne_sc_spirvhdr_vendored}" VNE_SC_SPIRV_HEADERS_DIR
         _vne_sc_spirvhdr_src _vne_sc_spirvhdr_origin)
@@ -131,8 +141,13 @@ if(VNE_SC_GLSLANG)
 
     # glslang
     set(_vne_sc_glslang_vendored "${_vne_sc_repo_root}/deps/external/glslang")
-    set(VNE_SC_GLSLANG_DIR
-        "${_vne_sc_glslang_vendored}" CACHE PATH "glslang source root.")
+    if(EXISTS "${_vne_sc_glslang_vendored}/CMakeLists.txt")
+        set(_vne_sc_glslang_dir_init "${_vne_sc_glslang_vendored}")
+    else()
+        set(_vne_sc_glslang_dir_init "")
+    endif()
+    set(VNE_SC_GLSLANG_DIR "${_vne_sc_glslang_dir_init}" CACHE PATH
+        "glslang source root. Empty: FetchContent. Default: deps/external/glslang if present.")
     _vne_sc_resolve_dep(glslang
         "${_vne_sc_glslang_vendored}" VNE_SC_GLSLANG_DIR
         _vne_sc_glslang_src _vne_sc_glslang_origin)

@@ -65,6 +65,12 @@ std::optional<SourceLang> parseSourceLangString(const std::string& s) {
     return std::nullopt;
 }
 
+void logPipelineManifestErrors(const PipelineBuildManifest& manifest) {
+    for (const auto& error : manifest.errors) {
+        VNE_LOG_ERROR << "parsePipelineBuildManifestJson: " << error;
+    }
+}
+
 }  // namespace
 
 PipelineBuildDesc PipelineBuildManifest::toBuildDesc() const {
@@ -94,6 +100,7 @@ std::optional<PipelineBuildManifest> parsePipelineBuildManifestJson(const std::s
         const auto doc = nlohmann::json::parse(json);
         if (!doc.contains("name") || !doc["name"].is_string()) {
             manifest.errors.push_back("missing or invalid 'name'");
+            logPipelineManifestErrors(manifest);
             return std::nullopt;
         }
         manifest.name = doc["name"].get<std::string>();
@@ -125,6 +132,7 @@ std::optional<PipelineBuildManifest> parsePipelineBuildManifestJson(const std::s
 
         if (!doc.contains("stages") || !doc["stages"].is_array()) {
             manifest.errors.push_back("missing or invalid 'stages' array");
+            logPipelineManifestErrors(manifest);
             return std::nullopt;
         }
 
@@ -153,6 +161,7 @@ std::optional<PipelineBuildManifest> parsePipelineBuildManifestJson(const std::s
 
         if (manifest.stages.empty()) {
             manifest.errors.push_back("no valid stages");
+            logPipelineManifestErrors(manifest);
             return std::nullopt;
         }
 

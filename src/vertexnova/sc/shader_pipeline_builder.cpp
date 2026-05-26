@@ -34,8 +34,14 @@ ShaderPipelineBuilder::ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd> fr
 
 PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) {
     PipelineBuildResult result;
+    if (desc.stages.empty()) {
+        result.code = ResultCode::eCompileFailed;
+        result.error = "ShaderPipelineBuilder: at least one stage is required";
+        VNE_LOG_ERROR << result.error;
+        return result;
+    }
     result.artifact.name = desc.name;
-    result.artifact.source_lang = desc.stages.empty() ? SourceLang::eGLSL : desc.stages[0].lang;
+    result.artifact.source_lang = desc.stages[0].lang;
 
     if (!front_end_ || !front_end_->isAvailable()) {
         result.code = ResultCode::eUnavailable;
@@ -85,7 +91,13 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         stage_artifact.spirv = std::move(cr.spirv);
 
         // ── 2. Validate ───────────────────────────────────────────────────
-        if (desc.validate && validator_ && validator_->isAvailable()) {
+        if (desc.validate && (!validator_ || !validator_->isAvailable())) {
+            result.code = ResultCode::eUnavailable;
+            result.error = "ShaderPipelineBuilder: validator requested but not available";
+            VNE_LOG_ERROR << result.error;
+            return result;
+        }
+        if (desc.validate) {
             ValidationResult vr = validator_->validate(stage_artifact.spirv);
             if (!vr.ok()) {
                 result.code = ResultCode::eValidationFailed;
@@ -106,6 +118,12 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         }
 
         // ── 4. Cross-compile for each requested target ────────────────────
+        if (!desc.targets.empty() && !cross_compiler_) {
+            result.code = ResultCode::eUnavailable;
+            result.error = "ShaderPipelineBuilder: cross-compiler not available";
+            VNE_LOG_ERROR << result.error;
+            return result;
+        }
         if (cross_compiler_) {
             for (CrossTarget target : desc.targets) {
                 CrossCompileRequest ccr;
@@ -128,6 +146,12 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
                     return result;
                 }
             }
+        }
+        if (stage_artifact.cross_compiled.size() != desc.targets.size()) {
+            result.code = ResultCode::eCompileFailed;
+            result.error = "ShaderPipelineBuilder: failed to cross-compile one or more requested targets";
+            VNE_LOG_ERROR << result.error;
+            return result;
         }
 
         // ── 5. Cache store ─────────────────────────────────────────────────

@@ -23,7 +23,7 @@ namespace vne::sc {
  * @brief Cross-compiled source text for a single target shading language.
  */
 struct CrossCompiledSource {
-    CrossTarget target;       ///< Target language this source was compiled to.
+    CrossTarget target = CrossTarget::eMSL;  ///< Target language this source was compiled to.
     std::string source;       ///< Cross-compiled source text.
     std::string entry_point;  ///< Entry-point name as it appears in the output source.
 };
@@ -32,7 +32,7 @@ struct CrossCompiledSource {
  * @brief All compiler outputs for a single shader stage.
  */
 struct StageArtifact {
-    ShaderStage stage;
+    ShaderStage stage = ShaderStage::eVertex;
     std::string entry_point;
     std::vector<uint32_t> spirv;                      ///< SPIR-V binary words.
     StageReflection reflection;                       ///< Typed binding and push-constant metadata.

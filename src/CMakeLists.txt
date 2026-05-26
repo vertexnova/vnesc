@@ -38,7 +38,12 @@ if(VNE_SC_GLSLANG)
     add_library(vne::sc::glslang ALIAS vnesc_glslang)
 endif()
 
-# ── SPIRV-Cross cross-compiler + reflector (always built) ─────────────────────
+# ── SPIRV-Cross cross-compiler + reflector (SPIRV-Cross only; not SPIRV-Headers) ─
+if(NOT TARGET spirv-cross-core)
+    message(FATAL_ERROR
+        "vnesc_spirvcross requires SPIRV-Cross (target spirv-cross-core). "
+        "Provide deps/external/SPIRV-Cross or allow FetchContent in cmake/VnescDeps.cmake.")
+endif()
 add_library(vnesc_spirvcross STATIC
     vertexnova/sc/crosscompiler/spirvcross_cross_compiler.cpp
     vertexnova/sc/reflector/spirvcross_reflector.cpp)

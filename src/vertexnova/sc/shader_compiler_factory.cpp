@@ -43,7 +43,7 @@ std::shared_ptr<IShaderFrontEnd> ShaderCompilerFactory::createFrontEnd(SourceLan
         case SourceLang::eSlang:
             return std::make_shared<SlangFrontEnd>();
         default:
-            return std::make_shared<GlslangFrontEnd>();
+            return nullptr;
     }
 }
 
@@ -76,7 +76,11 @@ std::shared_ptr<IShaderValidator> ShaderCompilerFactory::createValidator() {
 }
 
 std::shared_ptr<IShaderPipelineBuilder> ShaderCompilerFactory::createPipelineBuilder(SourceLang lang) {
-    return std::make_shared<ShaderPipelineBuilder>(createFrontEnd(lang),
+    auto frontend = createFrontEnd(lang);
+    if (!frontend) {
+        return nullptr;
+    }
+    return std::make_shared<ShaderPipelineBuilder>(frontend,
                                                    createCrossCompiler(),
                                                    createReflector(),
                                                    createValidator());
