@@ -45,6 +45,8 @@ TEST_F(ShaderPipelineBuilderTest, CacheHitSkipsRecompilation) {
 
     auto r2 = builder->build(desc);
     ASSERT_TRUE(r2.ok()) << r2.error;
+    ASSERT_FALSE(r1.artifact.stages.empty());
+    ASSERT_FALSE(r2.artifact.stages.empty());
     EXPECT_EQ(r1.artifact.stages[0].spirv, r2.artifact.stages[0].spirv);
 
     removeTempDir(tmp);
