@@ -5,14 +5,24 @@
  * ----------------------------------------------------------------------
  */
 
+#include <chrono>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <sstream>
 
 #include "vertexnova/sc/vnesc.h"
 
 namespace vne::sc {
 
 class ShaderArtifactCacheTest : public ::testing::Test {};
+
+static std::filesystem::path makeUniqueTempPath(const char* prefix) {
+    namespace fs = std::filesystem;
+    const auto stamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::ostringstream name;
+    name << prefix << "_" << stamp;
+    return fs::temp_directory_path() / name.str();
+}
 
 TEST_F(ShaderArtifactCacheTest, MakeKeyIsDeterministic) {
     CompileRequest req;
@@ -37,7 +47,7 @@ TEST_F(ShaderArtifactCacheTest, DifferentSourceProducesDifferentKey) {
 
 TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {
     namespace fs = std::filesystem;
-    auto tmp = fs::temp_directory_path() / "vnesc_shader_artifact_cache_roundtrip";
+    auto tmp = makeUniqueTempPath("vnesc_shader_artifact_cache_roundtrip");
     fs::remove_all(tmp);
 
     ShaderArtifactCache cache(tmp.string());
@@ -70,7 +80,7 @@ TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {
 
 TEST_F(ShaderArtifactCacheTest, LookupMissReturnsNullopt) {
     namespace fs = std::filesystem;
-    auto tmp = fs::temp_directory_path() / "vnesc_shader_artifact_cache_miss";
+    auto tmp = makeUniqueTempPath("vnesc_shader_artifact_cache_miss");
     fs::remove_all(tmp);
     ShaderArtifactCache cache(tmp.string());
     EXPECT_FALSE(cache.lookup("0000000000000000").has_value());
@@ -79,7 +89,7 @@ TEST_F(ShaderArtifactCacheTest, LookupMissReturnsNullopt) {
 
 TEST_F(ShaderArtifactCacheTest, ClearRemovesAllEntries) {
     namespace fs = std::filesystem;
-    auto tmp = fs::temp_directory_path() / "vnesc_shader_artifact_cache_clear";
+    auto tmp = makeUniqueTempPath("vnesc_shader_artifact_cache_clear");
     fs::remove_all(tmp);
 
     ShaderArtifactCache cache(tmp.string());

@@ -21,6 +21,7 @@ TEST_F(DispatchCrossCompilerTest, VertexToMslProducesNonEmptySource) {
     ASSERT_TRUE(cr.ok());
 
     auto cc = ShaderCompilerFactory::createCrossCompiler();
+    ASSERT_NE(cc, nullptr);
     CrossCompileRequest ccr;
     ccr.spirv = cr.spirv;
     ccr.target = CrossTarget::eMSL;
@@ -35,6 +36,7 @@ TEST_F(DispatchCrossCompilerTest, VertexToMslProducesNonEmptySource) {
 TEST_F(DispatchCrossCompilerTest, WgslReturnsUnavailableWithoutTint) {
 #ifndef VNE_SC_TINT_ENABLED
     auto cc = ShaderCompilerFactory::createCrossCompiler();
+    ASSERT_NE(cc, nullptr);
     CrossCompileRequest ccr;
     ccr.spirv = {0x07230203u};
     ccr.target = CrossTarget::eWGSL;
