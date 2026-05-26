@@ -11,12 +11,16 @@ CMake modules (vnecmake) live in **cmake/vnecmake** at the project root; see mai
 
 ## Getting dependencies
 
-VneTemplate’s `.gitmodules` already defines all four submodules:
+`.gitmodules` defines these submodules (run `git submodule update --init --recursive` from the project root):
 
 | Submodule | Path | URL |
 |-----------|------|-----|
 | vnecmake | `cmake/vnecmake` | https://github.com/vertexnova/vnecmake.git |
 | googletest | `deps/external/googletest` | https://github.com/google/googletest.git |
+| SPIRV-Cross | `deps/external/SPIRV-Cross` | https://github.com/KhronosGroup/SPIRV-Cross.git |
+| SPIRV-Headers | `deps/external/SPIRV-Headers` | https://github.com/KhronosGroup/SPIRV-Headers.git |
+| glslang | `deps/external/glslang` | https://github.com/KhronosGroup/glslang.git |
+| SPIRV-Tools | `deps/external/SPIRV-Tools` | https://github.com/KhronosGroup/SPIRV-Tools.git |
 | vnecommon | `deps/internal/vnecommon` | https://github.com/vertexnova/vnecommon.git |
 | vnelogging | `deps/internal/vnelogging` | https://github.com/vertexnova/vnelogging.git |
 
