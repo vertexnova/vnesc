@@ -26,7 +26,7 @@ namespace vne::sc {
 namespace {
 
 uint64_t fnv1a64(const void* data, size_t len) noexcept {
-    const uint64_t FNV_PRIME  = 0x100000001b3ULL;
+    const uint64_t FNV_PRIME = 0x100000001b3ULL;
     const uint64_t FNV_OFFSET = 0xcbf29ce484222325ULL;
     uint64_t hash = FNV_OFFSET;
     const auto* ptr = static_cast<const uint8_t*>(data);
@@ -54,9 +54,9 @@ std::string toHex(uint64_t v) {
 // ── Binary I/O helpers ────────────────────────────────────────────────────────
 struct Writer {
     std::ostringstream os{std::ios::binary};
-    void u8(uint8_t v)             { os.write(reinterpret_cast<const char*>(&v), 1); }
-    void u32(uint32_t v)           { os.write(reinterpret_cast<const char*>(&v), 4); }
-    void boolean(bool v)           { u8(static_cast<uint8_t>(v ? 1 : 0)); }
+    void u8(uint8_t v) { os.write(reinterpret_cast<const char*>(&v), 1); }
+    void u32(uint32_t v) { os.write(reinterpret_cast<const char*>(&v), 4); }
+    void boolean(bool v) { u8(static_cast<uint8_t>(v ? 1 : 0)); }
     void str(const std::string& s) {
         u32(static_cast<uint32_t>(s.size()));
         os.write(s.data(), static_cast<std::streamsize>(s.size()));
@@ -65,10 +65,19 @@ struct Writer {
 
 struct Reader {
     std::istringstream is;
-    explicit Reader(const std::string& data) : is(data, std::ios::binary) {}
-    uint8_t     u8()  { uint8_t v{};  is.read(reinterpret_cast<char*>(&v), 1); return v; }
-    uint32_t    u32() { uint32_t v{}; is.read(reinterpret_cast<char*>(&v), 4); return v; }
-    bool        boolean() { return u8() != 0u; }
+    explicit Reader(const std::string& data)
+        : is(data, std::ios::binary) {}
+    uint8_t u8() {
+        uint8_t v{};
+        is.read(reinterpret_cast<char*>(&v), 1);
+        return v;
+    }
+    uint32_t u32() {
+        uint32_t v{};
+        is.read(reinterpret_cast<char*>(&v), 4);
+        return v;
+    }
+    bool boolean() { return u8() != 0u; }
     std::string str() {
         const uint32_t len = u32();
         std::string s(len, '\0');
@@ -87,8 +96,7 @@ std::string serializeArtifact(const StageArtifact& a) {
     w.u8(static_cast<uint8_t>(a.stage));
     w.str(a.entry_point);
     w.u32(static_cast<uint32_t>(a.spirv.size()));
-    w.os.write(reinterpret_cast<const char*>(a.spirv.data()),
-               static_cast<std::streamsize>(a.spirv.size() * 4));
+    w.os.write(reinterpret_cast<const char*>(a.spirv.data()), static_cast<std::streamsize>(a.spirv.size() * 4));
     {
         const std::string refl_blob = vne::sc::serializeStageReflection(a.reflection);
         w.u32(static_cast<uint32_t>(refl_blob.size()));
@@ -106,12 +114,11 @@ std::string serializeArtifact(const StageArtifact& a) {
 bool deserializeArtifact(const std::string& data, StageArtifact& out) {
     try {
         Reader r(data);
-        out.stage            = static_cast<ShaderStage>(r.u8());
-        out.entry_point      = r.str();
+        out.stage = static_cast<ShaderStage>(r.u8());
+        out.entry_point = r.str();
         const uint32_t spirv_count = r.u32();
         out.spirv.resize(spirv_count);
-        r.is.read(reinterpret_cast<char*>(out.spirv.data()),
-                  static_cast<std::streamsize>(spirv_count * 4));
+        r.is.read(reinterpret_cast<char*>(out.spirv.data()), static_cast<std::streamsize>(spirv_count * 4));
         {
             const uint32_t refl_size = r.u32();
             std::string refl_blob(refl_size, '\0');
@@ -124,8 +131,8 @@ bool deserializeArtifact(const std::string& data, StageArtifact& out) {
         const uint32_t cc_count = r.u32();
         out.cross_compiled.resize(cc_count);
         for (auto& cc : out.cross_compiled) {
-            cc.target      = static_cast<CrossTarget>(r.u8());
-            cc.source      = r.str();
+            cc.target = static_cast<CrossTarget>(r.u8());
+            cc.source = r.str();
             cc.entry_point = r.str();
         }
         return r.ok();
@@ -146,16 +153,19 @@ ShaderArtifactCache::ShaderArtifactCache(std::string cache_dir)
     }
 }
 
-std::string ShaderArtifactCache::makeKey(const CompileRequest& req,
-                                         const std::vector<CrossTarget>& targets) {
+std::string ShaderArtifactCache::makeKey(const CompileRequest& req, const std::vector<CrossTarget>& targets) {
     uint64_t h = 0xcbf29ce484222325ULL;
     hashStr(h, req.source);
     hashStr(h, req.file_path);
     hashStr(h, req.entry_point);
-    h ^= static_cast<uint64_t>(req.stage);     h *= 0x100000001b3ULL;
-    h ^= static_cast<uint64_t>(req.lang);      h *= 0x100000001b3ULL;
-    h ^= static_cast<uint64_t>(req.opt_level); h *= 0x100000001b3ULL;
-    h ^= req.glsl_version;                     h *= 0x100000001b3ULL;
+    h ^= static_cast<uint64_t>(req.stage);
+    h *= 0x100000001b3ULL;
+    h ^= static_cast<uint64_t>(req.lang);
+    h *= 0x100000001b3ULL;
+    h ^= static_cast<uint64_t>(req.opt_level);
+    h *= 0x100000001b3ULL;
+    h ^= req.glsl_version;
+    h *= 0x100000001b3ULL;
     for (const auto& m : req.macros) {
         hashStr(h, m.name);
         hashStr(h, m.value);
@@ -205,8 +215,7 @@ void ShaderArtifactCache::store(const std::string& key, const StageArtifact& art
     }
     const std::string data = serializeArtifact(artifact);
     f.write(data.data(), static_cast<std::streamsize>(data.size()));
-    VNE_LOG_DEBUG << "ShaderArtifactCache: stored artifact for key " << key
-                  << " (" << data.size() << " bytes)";
+    VNE_LOG_DEBUG << "ShaderArtifactCache: stored artifact for key " << key << " (" << data.size() << " bytes)";
 }
 
 void ShaderArtifactCache::clear() {

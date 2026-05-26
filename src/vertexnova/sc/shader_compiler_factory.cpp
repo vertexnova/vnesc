@@ -60,8 +60,7 @@ std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createTintCrossComp
 }
 
 std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createCrossCompiler() {
-    return std::make_shared<DispatchCrossCompiler>(createSpirvCrossCrossCompiler(),
-                                                     createTintCrossCompiler());
+    return std::make_shared<DispatchCrossCompiler>(createSpirvCrossCrossCompiler(), createTintCrossCompiler());
 }
 
 std::shared_ptr<IShaderReflector> ShaderCompilerFactory::createReflector() {

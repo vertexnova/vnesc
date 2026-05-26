@@ -23,10 +23,10 @@ CREATE_VNE_LOGGER_CATEGORY("vne.sc.pipeline")
 
 namespace vne::sc {
 
-ShaderPipelineBuilder::ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd>      front_end,
+ShaderPipelineBuilder::ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd> front_end,
                                              std::shared_ptr<IShaderCrossCompiler> cross_compiler,
-                                             std::shared_ptr<IShaderReflector>     reflector,
-                                             std::shared_ptr<IShaderValidator>     validator)
+                                             std::shared_ptr<IShaderReflector> reflector,
+                                             std::shared_ptr<IShaderValidator> validator)
     : front_end_(std::move(front_end))
     , cross_compiler_(std::move(cross_compiler))
     , reflector_(std::move(reflector))
@@ -34,18 +34,17 @@ ShaderPipelineBuilder::ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd>   
 
 PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) {
     PipelineBuildResult result;
-    result.artifact.name        = desc.name;
+    result.artifact.name = desc.name;
     result.artifact.source_lang = desc.stages.empty() ? SourceLang::eGLSL : desc.stages[0].lang;
 
     if (!front_end_ || !front_end_->isAvailable()) {
-        result.code  = ResultCode::eUnavailable;
+        result.code = ResultCode::eUnavailable;
         result.error = "ShaderPipelineBuilder: front-end not available";
         VNE_LOG_ERROR << result.error;
         return result;
     }
 
-    VNE_LOG_INFO << "ShaderPipelineBuilder: building '" << desc.name << "' ("
-                 << desc.stages.size() << " stage(s))";
+    VNE_LOG_INFO << "ShaderPipelineBuilder: building '" << desc.name << "' (" << desc.stages.size() << " stage(s))";
 
     std::unique_ptr<ShaderArtifactCache> cache;
     if (desc.use_cache && !desc.cache_dir.empty()) {
@@ -59,22 +58,21 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (cache) {
             auto cached = cache->lookup(key);
             if (cached.has_value()) {
-                VNE_LOG_DEBUG << "ShaderPipelineBuilder: cache hit for stage "
-                              << static_cast<int>(req.stage);
+                VNE_LOG_DEBUG << "ShaderPipelineBuilder: cache hit for stage " << static_cast<int>(req.stage);
                 result.artifact.stages.push_back(std::move(*cached));
                 continue;
             }
         }
 
         StageArtifact stage_artifact;
-        stage_artifact.stage       = req.stage;
+        stage_artifact.stage = req.stage;
         stage_artifact.entry_point = req.entry_point;
 
         // ── 1. Compile → SPIR-V ───────────────────────────────────────────
         VNE_LOG_DEBUG << "ShaderPipelineBuilder: compiling stage " << static_cast<int>(req.stage);
         CompileResult cr = front_end_->compile(req);
         if (!cr.ok()) {
-            result.code  = cr.code;
+            result.code = cr.code;
             result.error = "ShaderPipelineBuilder: compile failed";
             for (const auto& e : cr.errors)
                 result.error += "\n  " + e;
@@ -90,7 +88,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (desc.validate && validator_ && validator_->isAvailable()) {
             ValidationResult vr = validator_->validate(stage_artifact.spirv);
             if (!vr.ok()) {
-                result.code  = ResultCode::eValidationFailed;
+                result.code = ResultCode::eValidationFailed;
                 result.error = "ShaderPipelineBuilder: SPIR-V validation failed: " + vr.error;
                 VNE_LOG_ERROR << result.error;
                 return result;
@@ -111,22 +109,21 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (cross_compiler_) {
             for (CrossTarget target : desc.targets) {
                 CrossCompileRequest ccr;
-                ccr.spirv  = stage_artifact.spirv;
+                ccr.spirv = stage_artifact.spirv;
                 ccr.target = target;
-                ccr.stage  = req.stage;
+                ccr.stage = req.stage;
 
                 CrossCompileResult ccres = cross_compiler_->crossCompile(ccr);
                 if (ccres.ok()) {
                     CrossCompiledSource cc;
-                    cc.target      = target;
-                    cc.source      = std::move(ccres.source);
+                    cc.target = target;
+                    cc.source = std::move(ccres.source);
                     cc.entry_point = std::move(ccres.entry_point);
                     stage_artifact.cross_compiled.push_back(std::move(cc));
                 } else {
-                    result.code  = ccres.code;
+                    result.code = ccres.code;
                     result.error = "ShaderPipelineBuilder: cross-compile to target "
-                                   + std::to_string(static_cast<int>(target)) + " failed: "
-                                   + ccres.error;
+                                   + std::to_string(static_cast<int>(target)) + " failed: " + ccres.error;
                     VNE_LOG_ERROR << result.error;
                     return result;
                 }
@@ -141,8 +138,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         result.artifact.stages.push_back(std::move(stage_artifact));
     }
 
-    VNE_LOG_INFO << "ShaderPipelineBuilder: build complete — " << result.artifact.stages.size()
-                 << " stage(s)";
+    VNE_LOG_INFO << "ShaderPipelineBuilder: build complete — " << result.artifact.stages.size() << " stage(s)";
     result.code = ResultCode::eSuccess;
     return result;
 }

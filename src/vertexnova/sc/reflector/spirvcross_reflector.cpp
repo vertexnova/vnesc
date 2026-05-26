@@ -25,7 +25,7 @@ namespace {
 
 // ── Metal binding constants (must match kFlattenBinding / kMetalUboBase in cross-compiler) ──
 constexpr uint32_t kFlattenBinding = 32u;
-constexpr uint32_t kMetalUboBase   = 16u;
+constexpr uint32_t kMetalUboBase = 16u;
 
 inline uint32_t metalBuf(uint32_t set, uint32_t binding) noexcept {
     return kMetalUboBase + (set * kFlattenBinding + binding);
@@ -38,9 +38,8 @@ inline uint32_t metalSmp(uint32_t set, uint32_t binding) noexcept {
 }
 
 // ── Reflect struct members from a SPIRV-Cross block type ─────────────────────
-std::vector<vne::sc::ReflectedStructMember>
-reflectStructMembers(const spirv_cross::Compiler& compiler,
-                     const spirv_cross::SPIRType&  block_type) {
+std::vector<vne::sc::ReflectedStructMember> reflectStructMembers(const spirv_cross::Compiler& compiler,
+                                                                 const spirv_cross::SPIRType& block_type) {
     std::vector<vne::sc::ReflectedStructMember> members;
     const uint32_t member_count = static_cast<uint32_t>(block_type.member_types.size());
     members.reserve(member_count);
@@ -50,15 +49,15 @@ reflectStructMembers(const spirv_cross::Compiler& compiler,
         m.name = compiler.get_member_name(block_type.self, i);
 
         const spirv_cross::SPIRType& mt = compiler.get_type(block_type.member_types[i]);
-        m.offset       = compiler.type_struct_member_offset(block_type, i);
-        m.size         = static_cast<uint32_t>(compiler.get_declared_struct_member_size(block_type, i));
-        m.array_count  = mt.array.empty() ? 1u : (mt.array[0] == 0u ? 0u : mt.array[0]);
-        m.array_stride = mt.array.empty() ? 0u :
-                         static_cast<uint32_t>(compiler.type_struct_member_array_stride(block_type, i));
-        m.is_matrix    = mt.columns > 1;
+        m.offset = compiler.type_struct_member_offset(block_type, i);
+        m.size = static_cast<uint32_t>(compiler.get_declared_struct_member_size(block_type, i));
+        m.array_count = mt.array.empty() ? 1u : (mt.array[0] == 0u ? 0u : mt.array[0]);
+        m.array_stride =
+            mt.array.empty() ? 0u : static_cast<uint32_t>(compiler.type_struct_member_array_stride(block_type, i));
+        m.is_matrix = mt.columns > 1;
         if (m.is_matrix) {
             m.matrix_columns = mt.columns;
-            m.matrix_rows    = mt.vecsize;
+            m.matrix_rows = mt.vecsize;
         }
         m.type_name = compiler.get_name(mt.self);
         members.push_back(std::move(m));
@@ -68,14 +67,14 @@ reflectStructMembers(const spirv_cross::Compiler& compiler,
 
 // ── Populate one ReflectedBindingInfo from a SPIRV-Cross resource ────────────
 template<vne::sc::ReflectedResourceType Type>
-void appendBinding(const spirv_cross::Compiler&                          compiler,
-                   const spirv_cross::CompilerMSL&                       msl,
-                   const spirv_cross::Resource&                          res,
-                   vne::sc::ShaderStage                                  stage,
-                   std::vector<vne::sc::ReflectedBindingInfo>&           out) {
+void appendBinding(const spirv_cross::Compiler& compiler,
+                   const spirv_cross::CompilerMSL& msl,
+                   const spirv_cross::Resource& res,
+                   vne::sc::ShaderStage stage,
+                   std::vector<vne::sc::ReflectedBindingInfo>& out) {
     using namespace vne::sc;
 
-    const uint32_t set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+    const uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
     const uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
     const spirv_cross::SPIRType& ty = compiler.get_type(res.type_id);
@@ -116,8 +115,7 @@ void appendBinding(const spirv_cross::Compiler&                          compile
 
     if (!slot.populated) {
         slot.populated = true;
-        if constexpr (Type == ReflectedResourceType::eUniformBuffer
-                      || Type == ReflectedResourceType::eStorageBuffer) {
+        if constexpr (Type == ReflectedResourceType::eUniformBuffer || Type == ReflectedResourceType::eStorageBuffer) {
             slot.metal_buffer_index = metalBuf(set, binding);
         } else {
             slot.metal_texture_index = metalTex(set, binding);
@@ -126,22 +124,21 @@ void appendBinding(const spirv_cross::Compiler&                          compile
     }
 
     // WebGPU slot mirrors Vulkan set/binding directly
-    slot.wgpu_group   = set;
+    slot.wgpu_group = set;
     slot.wgpu_binding = binding;
 
     // ── Assemble binding info ─────────────────────────────────────────────────
     ReflectedBindingInfo info;
-    info.name         = res.name;
-    info.type         = actual_type;
-    info.set          = set;
-    info.binding      = binding;
-    info.array_size   = array_size;
-    info.stages       = ShaderStageFlags::eNone;  // caller sets stage flags
+    info.name = res.name;
+    info.type = actual_type;
+    info.set = set;
+    info.binding = binding;
+    info.array_size = array_size;
+    info.stages = ShaderStageFlags::eNone;  // caller sets stage flags
     info.backend_slot = slot;
 
     // Struct members for buffer types
-    if constexpr (Type == ReflectedResourceType::eUniformBuffer
-                  || Type == ReflectedResourceType::eStorageBuffer) {
+    if constexpr (Type == ReflectedResourceType::eUniformBuffer || Type == ReflectedResourceType::eStorageBuffer) {
         try {
             const spirv_cross::SPIRType& block = compiler.get_type(res.base_type_id);
             info.struct_members = reflectStructMembers(compiler, block);
@@ -156,12 +153,18 @@ vne::sc::ShaderStageFlags stageToFlag(vne::sc::ShaderStage s) noexcept {
     using F = vne::sc::ShaderStageFlags;
     using S = vne::sc::ShaderStage;
     switch (s) {
-        case S::eVertex:                return F::eVertex;
-        case S::eFragment:              return F::eFragment;
-        case S::eCompute:               return F::eCompute;
-        case S::eGeometry:              return F::eGeometry;
-        case S::eTessellationControl:   return F::eTessellationControl;
-        case S::eTessellationEvaluation:return F::eTessellationEvaluation;
+        case S::eVertex:
+            return F::eVertex;
+        case S::eFragment:
+            return F::eFragment;
+        case S::eCompute:
+            return F::eCompute;
+        case S::eGeometry:
+            return F::eGeometry;
+        case S::eTessellationControl:
+            return F::eTessellationControl;
+        case S::eTessellationEvaluation:
+            return F::eTessellationEvaluation;
     }
     return F::eNone;
 }
@@ -174,7 +177,7 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, S
     ReflectResult result;
 
     if (spirv.empty()) {
-        result.code  = ResultCode::eReflectionFailed;
+        result.code = ResultCode::eReflectionFailed;
         result.error = "SpirvCrossReflector: empty SPIR-V";
         VNE_LOG_ERROR << result.error;
         return result;
@@ -206,17 +209,17 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, S
 
         auto& bindings = sr.bindings;
 
-#define VNE_REFLECT_LIST(Type, list)                                                        \
-    for (const auto& res : resources.list) {                                                \
+#define VNE_REFLECT_LIST(Type, list)                                                              \
+    for (const auto& res : resources.list) {                                                      \
         appendBinding<ReflectedResourceType::Type>(compiler, msl_compiler, res, stage, bindings); \
     }
 
-        VNE_REFLECT_LIST(eUniformBuffer,         uniform_buffers)
-        VNE_REFLECT_LIST(eStorageBuffer,         storage_buffers)
-        VNE_REFLECT_LIST(eSampledImage,          separate_images)
-        VNE_REFLECT_LIST(eStorageImage,          storage_images)
-        VNE_REFLECT_LIST(eSampler,               separate_samplers)
-        VNE_REFLECT_LIST(eCombinedImageSampler,  sampled_images)
+        VNE_REFLECT_LIST(eUniformBuffer, uniform_buffers)
+        VNE_REFLECT_LIST(eStorageBuffer, storage_buffers)
+        VNE_REFLECT_LIST(eSampledImage, separate_images)
+        VNE_REFLECT_LIST(eStorageImage, storage_images)
+        VNE_REFLECT_LIST(eSampler, separate_samplers)
+        VNE_REFLECT_LIST(eCombinedImageSampler, sampled_images)
 
 #undef VNE_REFLECT_LIST
 
@@ -250,7 +253,7 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, S
         result.code = ResultCode::eSuccess;
 
     } catch (const std::exception& e) {
-        result.code  = ResultCode::eReflectionFailed;
+        result.code = ResultCode::eReflectionFailed;
         result.error = std::string("SpirvCrossReflector: ") + e.what();
         VNE_LOG_ERROR << result.error;
     }

@@ -10,7 +10,8 @@ namespace vne::sc {
 
 DispatchCrossCompiler::DispatchCrossCompiler(std::shared_ptr<IShaderCrossCompiler> spirv_cross,
                                              std::shared_ptr<IShaderCrossCompiler> tint)
-    : spirv_cross_(std::move(spirv_cross)), tint_(std::move(tint)) {}
+    : spirv_cross_(std::move(spirv_cross))
+    , tint_(std::move(tint)) {}
 
 bool DispatchCrossCompiler::isAvailable() const noexcept {
     return spirv_cross_ && spirv_cross_->isAvailable();
@@ -20,7 +21,7 @@ CrossCompileResult DispatchCrossCompiler::crossCompile(const CrossCompileRequest
     if (req.target == CrossTarget::eWGSL) {
         if (!tint_ || !tint_->isAvailable()) {
             CrossCompileResult result;
-            result.code  = ResultCode::eUnavailable;
+            result.code = ResultCode::eUnavailable;
             result.error = "DispatchCrossCompiler: WGSL requires Tint (build with -DVNE_SC_TINT=ON)";
             return result;
         }
@@ -28,7 +29,7 @@ CrossCompileResult DispatchCrossCompiler::crossCompile(const CrossCompileRequest
     }
     if (!spirv_cross_) {
         CrossCompileResult result;
-        result.code  = ResultCode::eUnavailable;
+        result.code = ResultCode::eUnavailable;
         result.error = "DispatchCrossCompiler: SPIRV-Cross backend not available";
         return result;
     }

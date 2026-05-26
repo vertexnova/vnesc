@@ -84,7 +84,8 @@ struct Writer {
 
 struct Reader {
     std::istringstream is;
-    explicit Reader(const std::string& data) : is(data, std::ios::binary) {}
+    explicit Reader(const std::string& data)
+        : is(data, std::ios::binary) {}
     void bytes(char* data, size_t len) { is.read(data, static_cast<std::streamsize>(len)); }
     uint32_t u32() {
         uint32_t v{};
@@ -121,15 +122,15 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
     }
 
     ShaderBundleHeader header;
-    header.name        = artifact.name;
+    header.name = artifact.name;
     header.source_lang = artifact.source_lang;
 
     for (const auto& stage : artifact.stages) {
         const std::string base = artifact.name + "." + stageSuffix(stage.stage);
         BundleStageFiles files;
-        files.stage       = stage.stage;
+        files.stage = stage.stage;
         files.entry_point = stage.entry_point;
-        files.spirv_file  = base + ".spv";
+        files.spirv_file = base + ".spv";
 
         if (!writeSpirvFile(bundle_dir / files.spirv_file, stage.spirv)) {
             VNE_LOG_ERROR << "writeShaderBundle: failed to write " << files.spirv_file;
@@ -177,14 +178,14 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
 
 #ifdef VNE_SC_JSON_ENABLED
     nlohmann::json manifest;
-    manifest["name"]        = artifact.name;
+    manifest["name"] = artifact.name;
     manifest["source_lang"] = "GLSL";
-    manifest["stages"]      = nlohmann::json::array();
+    manifest["stages"] = nlohmann::json::array();
     for (const auto& s : header.stages) {
         nlohmann::json entry;
-        entry["stage"]       = stageSuffix(s.stage);
-        entry["entry"]       = s.entry_point;
-        entry["spirv"]       = s.spirv_file;
+        entry["stage"] = stageSuffix(s.stage);
+        entry["entry"] = s.entry_point;
+        entry["spirv"] = s.spirv_file;
         if (!s.msl_file.empty()) {
             entry["msl"] = s.msl_file;
         }
@@ -222,16 +223,16 @@ std::optional<ShaderBundleHeader> readShaderBundleHeader(const std::filesystem::
             return std::nullopt;
         }
         ShaderBundleHeader header;
-        header.name        = r.str();
+        header.name = r.str();
         header.source_lang = static_cast<SourceLang>(r.u8());
         const uint32_t count = r.u32();
         header.stages.resize(count);
         for (auto& s : header.stages) {
-            s.stage       = static_cast<ShaderStage>(r.u8());
+            s.stage = static_cast<ShaderStage>(r.u8());
             s.entry_point = r.str();
-            s.spirv_file  = r.str();
-            s.msl_file    = r.str();
-            s.wgsl_file   = r.str();
+            s.spirv_file = r.str();
+            s.msl_file = r.str();
+            s.wgsl_file = r.str();
         }
         if (!r.ok()) {
             return std::nullopt;

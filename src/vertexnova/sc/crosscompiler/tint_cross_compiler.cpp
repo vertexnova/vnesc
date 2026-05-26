@@ -39,19 +39,19 @@ CrossCompileResult TintCrossCompiler::crossCompile(const CrossCompileRequest& re
     CrossCompileResult result;
 
     if (req.target != CrossTarget::eWGSL) {
-        result.code  = ResultCode::eInvalidArgument;
+        result.code = ResultCode::eInvalidArgument;
         result.error = "TintCrossCompiler: only CrossTarget::eWGSL is supported";
         return result;
     }
 
     if (req.spirv.empty()) {
-        result.code  = ResultCode::eInvalidArgument;
+        result.code = ResultCode::eInvalidArgument;
         result.error = "TintCrossCompiler: empty SPIR-V input";
         return result;
     }
 
 #ifndef VNE_SC_TINT_ENABLED
-    result.code  = ResultCode::eUnavailable;
+    result.code = ResultCode::eUnavailable;
     result.error = "TintCrossCompiler: Tint not compiled in (enable -DVNE_SC_TINT=ON)";
     return result;
 #else
@@ -59,19 +59,18 @@ CrossCompileResult TintCrossCompiler::crossCompile(const CrossCompileRequest& re
     auto tint_result = tint::SpirvToWgsl(req.spirv, wgsl_options);
 
     if (tint_result != tint::Success) {
-        result.code  = ResultCode::eCrossCompileFailed;
+        result.code = ResultCode::eCrossCompileFailed;
         result.error = "TintCrossCompiler: SPIR-V to WGSL failed";
         VNE_LOG_ERROR << result.error;
         return result;
     }
 
-    result.source      = tint_result.Get();
+    result.source = tint_result.Get();
     result.entry_point = req.stage == ShaderStage::eFragment ? "main" : "main";
-    result.code        = ResultCode::eSuccess;
+    result.code = ResultCode::eSuccess;
 
-    if (result.source.find("@vertex") != std::string::npos ||
-        result.source.find("@fragment") != std::string::npos ||
-        result.source.find("@compute") != std::string::npos) {
+    if (result.source.find("@vertex") != std::string::npos || result.source.find("@fragment") != std::string::npos
+        || result.source.find("@compute") != std::string::npos) {
         if (req.stage == ShaderStage::eVertex) {
             result.entry_point = "vertex_main";
         } else if (req.stage == ShaderStage::eFragment) {

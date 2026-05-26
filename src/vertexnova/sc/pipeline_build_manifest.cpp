@@ -69,15 +69,15 @@ std::optional<SourceLang> parseSourceLangString(const std::string& s) {
 
 PipelineBuildDesc PipelineBuildManifest::toBuildDesc() const {
     PipelineBuildDesc desc;
-    desc.name     = name;
+    desc.name = name;
     desc.validate = validate;
-    desc.targets  = targets;
+    desc.targets = targets;
     for (const auto& ms : stages) {
         CompileRequest req;
-        req.file_path   = ms.file;
+        req.file_path = ms.file;
         req.entry_point = ms.entry;
-        req.stage       = ms.stage;
-        req.lang        = source_lang;
+        req.stage = ms.stage;
+        req.lang = source_lang;
         desc.stages.push_back(std::move(req));
     }
     return desc;
@@ -144,7 +144,7 @@ std::optional<PipelineBuildManifest> parsePipelineBuildManifestJson(const std::s
                 continue;
             }
             ms.stage = *stage;
-            ms.file  = stage_entry["file"].get<std::string>();
+            ms.file = stage_entry["file"].get<std::string>();
             if (stage_entry.contains("entry") && stage_entry["entry"].is_string()) {
                 ms.entry = stage_entry["entry"].get<std::string>();
             }

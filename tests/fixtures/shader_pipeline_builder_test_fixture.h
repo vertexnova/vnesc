@@ -19,8 +19,7 @@ class ShaderPipelineBuilderTestFixture : public GlslangFrontEndTestFixture {
         return ShaderCompilerFactory::createPipelineBuilder(SourceLang::eGLSL);
     }
 
-    static PipelineBuildDesc makeVertMslDesc(const char* name, bool use_cache,
-                                             const std::string& cache_dir = {}) {
+    static PipelineBuildDesc makeVertMslDesc(const char* name, bool use_cache, const std::string& cache_dir = {}) {
         PipelineBuildDesc desc;
         desc.name = name;
         desc.validate = false;
@@ -50,9 +49,7 @@ class ShaderPipelineBuilderTestFixture : public GlslangFrontEndTestFixture {
         return path;
     }
 
-    static void removeTempDir(const std::filesystem::path& path) {
-        std::filesystem::remove_all(path);
-    }
+    static void removeTempDir(const std::filesystem::path& path) { std::filesystem::remove_all(path); }
 };
 
 }  // namespace vne::sc::test

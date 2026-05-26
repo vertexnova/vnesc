@@ -23,7 +23,8 @@ struct Writer {
 
 struct Reader {
     std::istringstream is;
-    explicit Reader(const std::string& data) : is(data, std::ios::binary) {}
+    explicit Reader(const std::string& data)
+        : is(data, std::ios::binary) {}
     uint8_t u8() {
         uint8_t v{};
         is.read(reinterpret_cast<char*>(&v), 1);
@@ -57,15 +58,15 @@ void writeReflectedStructMember(Writer& w, const vne::sc::ReflectedStructMember&
 }
 
 void readReflectedStructMember(Reader& r, vne::sc::ReflectedStructMember& m) {
-    m.name           = r.str();
-    m.offset         = r.u32();
-    m.size           = r.u32();
-    m.array_count    = r.u32();
-    m.array_stride   = r.u32();
-    m.is_matrix      = r.boolean();
+    m.name = r.str();
+    m.offset = r.u32();
+    m.size = r.u32();
+    m.array_count = r.u32();
+    m.array_stride = r.u32();
+    m.is_matrix = r.boolean();
     m.matrix_columns = r.u32();
-    m.matrix_rows    = r.u32();
-    m.type_name      = r.str();
+    m.matrix_rows = r.u32();
+    m.type_name = r.str();
 }
 
 void writeBackendSlot(Writer& w, const vne::sc::BackendSlot& s) {
@@ -78,12 +79,12 @@ void writeBackendSlot(Writer& w, const vne::sc::BackendSlot& s) {
 }
 
 void readBackendSlot(Reader& r, vne::sc::BackendSlot& s) {
-    s.metal_buffer_index  = r.u32();
+    s.metal_buffer_index = r.u32();
     s.metal_texture_index = r.u32();
     s.metal_sampler_index = r.u32();
-    s.wgpu_group          = r.u32();
-    s.wgpu_binding        = r.u32();
-    s.populated           = r.boolean();
+    s.wgpu_group = r.u32();
+    s.wgpu_binding = r.u32();
+    s.populated = r.boolean();
 }
 
 void writeReflectedBindingInfo(Writer& w, const vne::sc::ReflectedBindingInfo& b) {
@@ -101,12 +102,12 @@ void writeReflectedBindingInfo(Writer& w, const vne::sc::ReflectedBindingInfo& b
 }
 
 void readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
-    b.name       = r.str();
-    b.type       = static_cast<vne::sc::ReflectedResourceType>(r.u8());
-    b.set        = r.u32();
-    b.binding    = r.u32();
+    b.name = r.str();
+    b.type = static_cast<vne::sc::ReflectedResourceType>(r.u8());
+    b.set = r.u32();
+    b.binding = r.u32();
     b.array_size = r.u32();
-    b.stages     = static_cast<vne::sc::ShaderStageFlags>(r.u32());
+    b.stages = static_cast<vne::sc::ShaderStageFlags>(r.u32());
     readBackendSlot(r, b.backend_slot);
     const uint32_t member_count = r.u32();
     b.struct_members.resize(member_count);
@@ -135,9 +136,9 @@ void readStageReflection(Reader& r, vne::sc::StageReflection& sr) {
         readReflectedBindingInfo(r, b);
     }
     sr.push_constant_size = r.u32();
-    sr.workgroup_size.x   = r.u32();
-    sr.workgroup_size.y   = r.u32();
-    sr.workgroup_size.z   = r.u32();
+    sr.workgroup_size.x = r.u32();
+    sr.workgroup_size.y = r.u32();
+    sr.workgroup_size.z = r.u32();
 }
 
 }  // namespace
