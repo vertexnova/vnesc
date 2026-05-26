@@ -46,6 +46,8 @@ GENERATE_XCODE=false
 WITH_DEV=true
 WITH_TESTS=true
 WITH_EXAMPLES=false
+TESTS_EXPLICIT=false
+EXAMPLES_EXPLICIT=false
 WITH_TINT=false
 WITH_SPIRVTOOLS=false
 WITH_GLSLANG=true
@@ -60,11 +62,11 @@ while [[ $# -gt 0 ]]; do
     -interactive|--interactive) INTERACTIVE_MODE=true; shift ;;
     -xcode|--xcode) GENERATE_XCODE=true; shift ;;
     -xcode-only|--xcode-only) GENERATE_XCODE=true; ACTION="xcode"; shift ;;
-    --dev) WITH_DEV=true; WITH_TESTS=true; shift ;;
-    --with-tests) WITH_TESTS=true; shift ;;
-    --no-tests) WITH_TESTS=false; shift ;;
-    --with-examples) WITH_EXAMPLES=true; shift ;;
-    --no-examples) WITH_EXAMPLES=false; shift ;;
+    --dev) WITH_DEV=true; shift ;;
+    --with-tests) WITH_TESTS=true; TESTS_EXPLICIT=true; shift ;;
+    --no-tests) WITH_TESTS=false; TESTS_EXPLICIT=true; shift ;;
+    --with-examples) WITH_EXAMPLES=true; EXAMPLES_EXPLICIT=true; shift ;;
+    --no-examples) WITH_EXAMPLES=false; EXAMPLES_EXPLICIT=true; shift ;;
     --with-tint) WITH_TINT=true; shift ;;
     --with-spirvtools) WITH_SPIRVTOOLS=true; shift ;;
     --no-glslang) WITH_GLSLANG=false; shift ;;
@@ -75,7 +77,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$WITH_DEV" == true ]] && WITH_TESTS=true && WITH_EXAMPLES=true
+if [[ "$WITH_DEV" == true ]]; then
+  [[ "$TESTS_EXPLICIT" == false ]] && WITH_TESTS=true
+  [[ "$EXAMPLES_EXPLICIT" == false ]] && WITH_EXAMPLES=true
+fi
 [[ "$GENERATE_XCODE" == true && "$ACTION" == "configure_and_build" ]] && ACTION="xcode_build"
 
 COMPILER_VERSION=$(clang --version | head -n 1 | awk '{print $4}' | sed 's/(.*)//')
