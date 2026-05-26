@@ -7,8 +7,14 @@
 #include "vertexnova/sc/shader_reflection_binary.h"
 
 #include <sstream>
+#include <stdexcept>
 
 namespace {
+
+constexpr uint32_t kMaxStringLen = 4096;
+constexpr uint32_t kMaxProgramStageCount = 16;
+constexpr uint32_t kMaxBindingCount = 256;
+constexpr uint32_t kMaxStructMemberCount = 256;
 
 struct Writer {
     std::ostringstream os{std::ios::binary};
@@ -23,23 +29,55 @@ struct Writer {
 
 struct Reader {
     std::istringstream is;
+    const size_t data_size_;
+
     explicit Reader(const std::string& data)
-        : is(data, std::ios::binary) {}
+        : is(data, std::ios::binary), data_size_(data.size()) {}
+
+    size_t remaining() {
+        const auto pos = is.tellg();
+        if (pos < 0) {
+            return 0;
+        }
+        return data_size_ - static_cast<size_t>(pos);
+    }
+
+    void require_bytes(size_t n) {
+        if (remaining() < n) {
+            throw std::runtime_error("truncated reflection binary");
+        }
+    }
+
     uint8_t u8() {
+        require_bytes(1);
         uint8_t v{};
         is.read(reinterpret_cast<char*>(&v), 1);
         return v;
     }
     uint32_t u32() {
+        require_bytes(4);
         uint32_t v{};
         is.read(reinterpret_cast<char*>(&v), 4);
         return v;
     }
+    uint32_t bounded_count(uint32_t max_count) {
+        const uint32_t count = u32();
+        if (count > max_count) {
+            throw std::runtime_error("reflection count exceeds maximum");
+        }
+        return count;
+    }
     bool boolean() { return u8() != 0u; }
     std::string str() {
         const uint32_t len = u32();
+        if (len > kMaxStringLen) {
+            throw std::runtime_error("reflection string length exceeds maximum");
+        }
+        require_bytes(len);
         std::string s(len, '\0');
-        is.read(s.data(), static_cast<std::streamsize>(len));
+        if (len > 0) {
+            is.read(s.data(), static_cast<std::streamsize>(len));
+        }
         return s;
     }
     bool ok() const { return is.good() || is.eof(); }
@@ -109,7 +147,7 @@ void readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
     b.array_size = r.u32();
     b.stages = static_cast<vne::sc::ShaderStageFlags>(r.u32());
     readBackendSlot(r, b.backend_slot);
-    const uint32_t member_count = r.u32();
+    const uint32_t member_count = r.bounded_count(kMaxStructMemberCount);
     b.struct_members.resize(member_count);
     for (auto& m : b.struct_members) {
         readReflectedStructMember(r, m);
@@ -130,7 +168,7 @@ void writeStageReflection(Writer& w, const vne::sc::StageReflection& sr) {
 
 void readStageReflection(Reader& r, vne::sc::StageReflection& sr) {
     sr.stage = static_cast<vne::sc::ShaderStage>(r.u8());
-    const uint32_t binding_count = r.u32();
+    const uint32_t binding_count = r.bounded_count(kMaxBindingCount);
     sr.bindings.resize(binding_count);
     for (auto& b : sr.bindings) {
         readReflectedBindingInfo(r, b);
@@ -173,7 +211,7 @@ std::string serializeProgramReflection(const ProgramReflection& reflection) {
 bool deserializeProgramReflection(const std::string& data, ProgramReflection& out) {
     try {
         Reader r(data);
-        const uint32_t count = r.u32();
+        const uint32_t count = r.bounded_count(kMaxProgramStageCount);
         out.stages.resize(count);
         for (auto& stage : out.stages) {
             readStageReflection(r, stage);
