@@ -15,8 +15,8 @@ namespace vne::sc {
 /**
  * @brief Compiles GLSL source to SPIR-V using glslang.
  *
- * @c glslang::InitializeProcess() is called once at construction and
- * @c glslang::FinalizeProcess() is called at destruction.
+ * @c glslang::InitializeProcess() / @c glslang::FinalizeProcess() use a
+ * process-wide reference count so multiple instances can coexist safely.
  */
 class GlslangFrontEnd final : public IShaderFrontEnd {
    public:

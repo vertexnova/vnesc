@@ -51,8 +51,7 @@ ValidationResult SpirvToolsValidator::validate(const std::vector<uint32_t>& spir
         result.code = ResultCode::eSuccess;
     } else {
         result.code = ResultCode::eValidationFailed;
-        result.error = diag.empty() ? "SpirvToolsValidator: validation failed (no diagnostics from SPIRV-Tools)"
-                                    : diag;
+        result.error = diag.empty() ? "SpirvToolsValidator: validation failed (no diagnostics from SPIRV-Tools)" : diag;
     }
     return result;
 #endif

@@ -10,10 +10,74 @@
 #include <SPIRV/GlslangToSpv.h>
 
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <filesystem>
 
 namespace {
+
+constexpr std::streamsize kMaxShaderFileBytes = 64 * 1024 * 1024;
+
+struct GlslangProcessLifetime {
+    std::mutex mutex;
+    int refs = 0;
+    bool process_ok = false;
+
+    bool acquire() {
+        std::lock_guard lock(mutex);
+        if (refs == 0) {
+            process_ok = glslang::InitializeProcess();
+        }
+        if (!process_ok) {
+            return false;
+        }
+        ++refs;
+        return true;
+    }
+
+    void release() {
+        std::lock_guard lock(mutex);
+        if (refs <= 0) {
+            return;
+        }
+        if (--refs == 0 && process_ok) {
+            glslang::FinalizeProcess();
+            process_ok = false;
+        }
+    }
+};
+
+GlslangProcessLifetime& glslangProcessLifetime() {
+    static GlslangProcessLifetime lifetime;
+    return lifetime;
+}
+
+bool readBinaryFile(std::ifstream& file, std::string& out) {
+    file.clear();
+    file.seekg(0, std::ios::end);
+    if (!file.good()) {
+        return false;
+    }
+    const auto end = file.tellg();
+    if (end < 0) {
+        return false;
+    }
+    const auto size = static_cast<std::streamsize>(end);
+    if (size > kMaxShaderFileBytes) {
+        return false;
+    }
+    file.clear();
+    file.seekg(0);
+    if (!file.good()) {
+        return false;
+    }
+    out.resize(static_cast<size_t>(size));
+    if (size == 0) {
+        return true;
+    }
+    file.read(out.data(), size);
+    return file.gcount() == size;
+}
 
 // ── Stage mapping ─────────────────────────────────────────────────────────────
 EShLanguage toEshLang(vne::sc::ShaderStage stage) {
@@ -75,14 +139,15 @@ class FileIncluder : public glslang::TShader::Includer {
     }
 
     IncludeResult* loadFile(const std::string& path, const char* header_name) {
-        std::ifstream f(path, std::ios::ate | std::ios::binary);
+        std::ifstream f(path, std::ios::binary);
         if (!f.is_open()) {
             return new IncludeResult(header_name, "// open failed", 14, nullptr);
         }
-        auto size = static_cast<std::streamsize>(f.tellg());
-        f.seekg(0);
-        auto* content = new std::string(static_cast<size_t>(size), '\0');
-        f.read(content->data(), size);
+        auto* content = new std::string();
+        if (!readBinaryFile(f, *content)) {
+            delete content;
+            return new IncludeResult(header_name, "// read failed", 14, nullptr);
+        }
         return new IncludeResult(header_name, content->data(), content->size(), content);
     }
 };
@@ -105,12 +170,12 @@ std::string buildPreamble(const std::vector<vne::sc::ShaderMacro>& macros) {
 namespace vne::sc {
 
 GlslangFrontEnd::GlslangFrontEnd() {
-    initialized_ = glslang::InitializeProcess();
+    initialized_ = glslangProcessLifetime().acquire();
 }
 
 GlslangFrontEnd::~GlslangFrontEnd() {
     if (initialized_) {
-        glslang::FinalizeProcess();
+        glslangProcessLifetime().release();
         initialized_ = false;
     }
 }
@@ -136,16 +201,17 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
         source = req.source;
         source_path = req.file_path.empty() ? "<inline>" : req.file_path;
     } else if (!req.file_path.empty()) {
-        std::ifstream f(req.file_path, std::ios::ate | std::ios::binary);
+        std::ifstream f(req.file_path, std::ios::binary);
         if (!f.is_open()) {
             result.errors.push_back("GlslangFrontEnd: cannot open '" + req.file_path + "'");
             result.code = ResultCode::eFileNotFound;
             return result;
         }
-        auto sz = static_cast<std::streamsize>(f.tellg());
-        f.seekg(0);
-        source.resize(static_cast<size_t>(sz));
-        f.read(source.data(), sz);
+        if (!readBinaryFile(f, source)) {
+            result.errors.push_back("GlslangFrontEnd: cannot read '" + req.file_path + "'");
+            result.code = ResultCode::eInvalidArgument;
+            return result;
+        }
         source_path = req.file_path;
     } else {
         result.errors.push_back("GlslangFrontEnd: CompileRequest has no source and no file_path");

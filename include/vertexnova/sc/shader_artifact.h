@@ -24,8 +24,8 @@ namespace vne::sc {
  */
 struct CrossCompiledSource {
     CrossTarget target = CrossTarget::eMSL;  ///< Target language this source was compiled to.
-    std::string source;       ///< Cross-compiled source text.
-    std::string entry_point;  ///< Entry-point name as it appears in the output source.
+    std::string source;                      ///< Cross-compiled source text.
+    std::string entry_point;                 ///< Entry-point name as it appears in the output source.
 };
 
 /**
