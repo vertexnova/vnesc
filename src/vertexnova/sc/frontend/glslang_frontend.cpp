@@ -18,31 +18,33 @@ namespace {
 // ── Stage mapping ─────────────────────────────────────────────────────────────
 EShLanguage toEshLang(vne::sc::ShaderStage stage) {
     switch (stage) {
-        case vne::sc::ShaderStage::eVertex:                 return EShLangVertex;
-        case vne::sc::ShaderStage::eFragment:               return EShLangFragment;
-        case vne::sc::ShaderStage::eCompute:                return EShLangCompute;
-        case vne::sc::ShaderStage::eGeometry:               return EShLangGeometry;
-        case vne::sc::ShaderStage::eTessellationControl:    return EShLangTessControl;
-        case vne::sc::ShaderStage::eTessellationEvaluation: return EShLangTessEvaluation;
+        case vne::sc::ShaderStage::eVertex:
+            return EShLangVertex;
+        case vne::sc::ShaderStage::eFragment:
+            return EShLangFragment;
+        case vne::sc::ShaderStage::eCompute:
+            return EShLangCompute;
+        case vne::sc::ShaderStage::eGeometry:
+            return EShLangGeometry;
+        case vne::sc::ShaderStage::eTessellationControl:
+            return EShLangTessControl;
+        case vne::sc::ShaderStage::eTessellationEvaluation:
+            return EShLangTessEvaluation;
     }
     return EShLangVertex;
 }
 
 // ── #include resolver ─────────────────────────────────────────────────────────
 class FileIncluder : public glslang::TShader::Includer {
-public:
+   public:
     explicit FileIncluder(const std::vector<std::string>& include_dirs)
         : include_dirs_(include_dirs) {}
 
-    IncludeResult* includeSystem(const char* header_name,
-                                 const char* /*includer_name*/,
-                                 size_t /*depth*/) override {
+    IncludeResult* includeSystem(const char* header_name, const char* /*includer_name*/, size_t /*depth*/) override {
         return searchAndLoad(header_name);
     }
 
-    IncludeResult* includeLocal(const char* header_name,
-                                const char* includer_name,
-                                size_t /*depth*/) override {
+    IncludeResult* includeLocal(const char* header_name, const char* includer_name, size_t /*depth*/) override {
         if (includer_name && *includer_name) {
             auto candidate = std::filesystem::path(includer_name).parent_path() / header_name;
             if (std::filesystem::exists(candidate)) {
@@ -59,7 +61,7 @@ public:
         }
     }
 
-private:
+   private:
     const std::vector<std::string>& include_dirs_;
 
     IncludeResult* searchAndLoad(const char* header_name) {
@@ -77,7 +79,7 @@ private:
         if (!f.is_open()) {
             return new IncludeResult(header_name, "// open failed", 14, nullptr);
         }
-        auto size    = static_cast<std::streamsize>(f.tellg());
+        auto size = static_cast<std::streamsize>(f.tellg());
         f.seekg(0);
         auto* content = new std::string(static_cast<size_t>(size), '\0');
         f.read(content->data(), size);
@@ -90,7 +92,9 @@ std::string buildPreamble(const std::vector<vne::sc::ShaderMacro>& macros) {
     std::string preamble;
     for (const auto& m : macros) {
         preamble += "#define " + m.name;
-        if (!m.value.empty()) { preamble += " " + m.value; }
+        if (!m.value.empty()) {
+            preamble += " " + m.value;
+        }
         preamble += "\n";
     }
     return preamble;
@@ -129,7 +133,7 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     std::string source_path;
 
     if (!req.source.empty()) {
-        source      = req.source;
+        source = req.source;
         source_path = req.file_path.empty() ? "<inline>" : req.file_path;
     } else if (!req.file_path.empty()) {
         std::ifstream f(req.file_path, std::ios::ate | std::ios::binary);
@@ -153,7 +157,7 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     EShLanguage esh_lang = toEshLang(req.stage);
     glslang::TShader shader(esh_lang);
 
-    const char* src_ptr  = source.c_str();
+    const char* src_ptr = source.c_str();
     const char* src_name = source_path.c_str();
     shader.setStringsWithLengthsAndNames(&src_ptr, nullptr, &src_name, 1);
     shader.setEntryPoint(req.entry_point.c_str());
@@ -174,19 +178,17 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     }
 
     FileIncluder includer(req.include_dirs);
-    const bool parsed = shader.parse(
-        GetDefaultResources(),
-        static_cast<int>(req.glsl_version),
-        false,
-        messages,
-        includer);
+    const bool parsed =
+        shader.parse(GetDefaultResources(), static_cast<int>(req.glsl_version), false, messages, includer);
 
     // Collect info-log lines, classified as warnings or errors
     if (const char* info = shader.getInfoLog(); info && *info) {
         std::istringstream ss(info);
         std::string line;
         while (std::getline(ss, line)) {
-            if (line.empty()) { continue; }
+            if (line.empty()) {
+                continue;
+            }
             if (line.find("WARNING") != std::string::npos) {
                 result.warnings.push_back(line);
             } else {
@@ -214,9 +216,9 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     // ── SPIR-V generation ──────────────────────────────────────────────────────
     glslang::SpvOptions spv_opts;
     spv_opts.generateDebugInfo = req.debug_info;
-    spv_opts.disableOptimizer  = (req.opt_level == OptLevel::eNone);
-    spv_opts.optimizeSize      = (req.opt_level == OptLevel::eSize);
-    spv_opts.stripDebugInfo    = !req.debug_info;
+    spv_opts.disableOptimizer = (req.opt_level == OptLevel::eNone);
+    spv_opts.optimizeSize = (req.opt_level == OptLevel::eSize);
+    spv_opts.stripDebugInfo = !req.debug_info;
 
     spv::SpvBuildLogger logger;
     glslang::GlslangToSpv(*program.getIntermediate(esh_lang), result.spirv, &logger, &spv_opts);

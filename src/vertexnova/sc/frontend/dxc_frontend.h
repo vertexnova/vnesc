@@ -21,7 +21,7 @@ namespace vne::sc {
  * @note SFI — stub.  All methods are no-ops until the DXC back-end is implemented.
  */
 class DxcFrontEnd final : public IShaderFrontEnd {
-public:
+   public:
     bool isAvailable() const noexcept override { return false; }
 
     CompileResult compile(const CompileRequest& req) override {

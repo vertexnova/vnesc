@@ -21,7 +21,7 @@ namespace vne::sc {
  * validation step; it simply always succeeds.
  */
 class NoopValidator final : public IShaderValidator {
-public:
+   public:
     bool isAvailable() const noexcept override { return true; }
 
     ValidationResult validate(const std::vector<uint32_t>& /*spirv*/) override {

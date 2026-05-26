@@ -19,14 +19,14 @@ namespace vne::sc {
  * @c glslang::FinalizeProcess() is called at destruction.
  */
 class GlslangFrontEnd final : public IShaderFrontEnd {
-public:
+   public:
     GlslangFrontEnd();
     ~GlslangFrontEnd() override;
 
     bool isAvailable() const noexcept override;
     CompileResult compile(const CompileRequest& req) override;
 
-private:
+   private:
     bool initialized_ = false;
 };
 

@@ -28,7 +28,7 @@ namespace vne::sc {
  * @c .vnca file whose name is the 16-character hex cache key.
  */
 class ShaderArtifactCache {
-public:
+   public:
     /**
      * @brief Constructs a cache rooted at @p cache_dir.
      *
@@ -43,8 +43,7 @@ public:
      * The key encodes source text, file path, entry point, stage, language,
      * optimisation level, preprocessor macros, and cross-compilation targets.
      */
-    static std::string makeKey(const CompileRequest& req,
-                               const std::vector<CrossTarget>& targets);
+    static std::string makeKey(const CompileRequest& req, const std::vector<CrossTarget>& targets);
 
     /**
      * @brief Looks up a cached artifact by key.
@@ -62,7 +61,7 @@ public:
      */
     void clear();
 
-private:
+   private:
     std::string cache_dir_;
 
     std::string artifactPath(const std::string& key) const;

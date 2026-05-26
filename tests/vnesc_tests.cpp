@@ -55,7 +55,7 @@ TEST(ShaderArtifact, InvalidWhenEmpty) {
 
 TEST(ShaderArtifact, InvalidWhenStageHasNoSpirv) {
     vne::sc::ShaderArtifact a;
-    vne::sc::StageArtifact  s;
+    vne::sc::StageArtifact s;
     s.stage = vne::sc::ShaderStage::eVertex;
     // spirv intentionally left empty
     a.stages.push_back(s);
@@ -64,7 +64,7 @@ TEST(ShaderArtifact, InvalidWhenStageHasNoSpirv) {
 
 TEST(ShaderArtifact, ValidWhenAllStagesHaveSpirv) {
     vne::sc::ShaderArtifact a;
-    vne::sc::StageArtifact  s;
+    vne::sc::StageArtifact s;
     s.stage = vne::sc::ShaderStage::eVertex;
     s.spirv = {0x07230203u, 0u};
     a.stages.push_back(s);
@@ -73,7 +73,7 @@ TEST(ShaderArtifact, ValidWhenAllStagesHaveSpirv) {
 
 TEST(ShaderArtifact, FindStageReturnsCorrectEntry) {
     vne::sc::ShaderArtifact a;
-    vne::sc::StageArtifact  vert, frag;
+    vne::sc::StageArtifact vert, frag;
     vert.stage = vne::sc::ShaderStage::eVertex;
     vert.spirv = {1u};
     frag.stage = vne::sc::ShaderStage::eFragment;
@@ -81,21 +81,21 @@ TEST(ShaderArtifact, FindStageReturnsCorrectEntry) {
     a.stages.push_back(vert);
     a.stages.push_back(frag);
 
-    ASSERT_NE(a.findStage(vne::sc::ShaderStage::eVertex),   nullptr);
+    ASSERT_NE(a.findStage(vne::sc::ShaderStage::eVertex), nullptr);
     ASSERT_NE(a.findStage(vne::sc::ShaderStage::eFragment), nullptr);
-    EXPECT_EQ(a.findStage(vne::sc::ShaderStage::eCompute),  nullptr);
+    EXPECT_EQ(a.findStage(vne::sc::ShaderStage::eCompute), nullptr);
     EXPECT_EQ(a.findStage(vne::sc::ShaderStage::eVertex)->spirv[0], 1u);
 }
 
 TEST(StageArtifact, FindCrossCompiledReturnsCorrectEntry) {
     vne::sc::StageArtifact s;
     vne::sc::CrossCompiledSource msl;
-    msl.target      = vne::sc::CrossTarget::eMSL;
-    msl.source      = "// msl";
+    msl.target = vne::sc::CrossTarget::eMSL;
+    msl.source = "// msl";
     msl.entry_point = "main0";
     s.cross_compiled.push_back(msl);
 
-    ASSERT_NE(s.findCrossCompiled(vne::sc::CrossTarget::eMSL),  nullptr);
+    ASSERT_NE(s.findCrossCompiled(vne::sc::CrossTarget::eMSL), nullptr);
     EXPECT_EQ(s.findCrossCompiled(vne::sc::CrossTarget::eWGSL), nullptr);
     EXPECT_EQ(s.findCrossCompiled(vne::sc::CrossTarget::eMSL)->entry_point, "main0");
 }
@@ -106,9 +106,9 @@ TEST(StageArtifact, FindCrossCompiledReturnsCorrectEntry) {
 
 TEST(ArtifactCache, MakeKeyIsDeterministic) {
     vne::sc::CompileRequest req;
-    req.source      = "void main() {}";
+    req.source = "void main() {}";
     req.entry_point = "main";
-    req.stage       = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
     std::vector<vne::sc::CrossTarget> targets = {vne::sc::CrossTarget::eMSL};
 
     auto k1 = vne::sc::ShaderArtifactCache::makeKey(req, targets);
@@ -122,8 +122,7 @@ TEST(ArtifactCache, DifferentSourceProducesDifferentKey) {
     a.source = "void main() { int x = 1; }";
     b.source = "void main() { int x = 2; }";
     std::vector<vne::sc::CrossTarget> targets;
-    EXPECT_NE(vne::sc::ShaderArtifactCache::makeKey(a, targets),
-              vne::sc::ShaderArtifactCache::makeKey(b, targets));
+    EXPECT_NE(vne::sc::ShaderArtifactCache::makeKey(a, targets), vne::sc::ShaderArtifactCache::makeKey(b, targets));
 }
 
 TEST(ArtifactCache, StoreAndLookupRoundTrip) {
@@ -134,14 +133,14 @@ TEST(ArtifactCache, StoreAndLookupRoundTrip) {
     vne::sc::ShaderArtifactCache cache(tmp.string());
 
     vne::sc::StageArtifact artifact;
-    artifact.stage           = vne::sc::ShaderStage::eVertex;
-    artifact.entry_point     = "main";
-    artifact.spirv           = {0x07230203u, 1u, 2u, 3u};
+    artifact.stage = vne::sc::ShaderStage::eVertex;
+    artifact.entry_point = "main";
+    artifact.spirv = {0x07230203u, 1u, 2u, 3u};
     artifact.reflection_json = R"({"name":"vertex","bindings":[]})";
 
     vne::sc::CrossCompiledSource cc;
-    cc.target      = vne::sc::CrossTarget::eMSL;
-    cc.source      = "// msl source";
+    cc.target = vne::sc::CrossTarget::eMSL;
+    cc.source = "// msl source";
     cc.entry_point = "main0";
     artifact.cross_compiled.push_back(cc);
 
@@ -150,10 +149,10 @@ TEST(ArtifactCache, StoreAndLookupRoundTrip) {
 
     auto found = cache.lookup(key);
     ASSERT_TRUE(found.has_value());
-    EXPECT_EQ(found->spirv,           artifact.spirv);
+    EXPECT_EQ(found->spirv, artifact.spirv);
     EXPECT_EQ(found->reflection_json, artifact.reflection_json);
     ASSERT_EQ(found->cross_compiled.size(), 1u);
-    EXPECT_EQ(found->cross_compiled[0].source,      cc.source);
+    EXPECT_EQ(found->cross_compiled[0].source, cc.source);
     EXPECT_EQ(found->cross_compiled[0].entry_point, cc.entry_point);
 
     fs::remove_all(tmp);
@@ -242,7 +241,7 @@ TEST(GlslangCompile, VertexShaderProducesNonEmptySpirv) {
 
     vne::sc::CompileRequest req;
     req.source = kVertGlsl;
-    req.stage  = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
 
     auto cr = fe->compile(req);
     EXPECT_TRUE(cr.ok()) << (cr.errors.empty() ? "" : cr.errors[0]);
@@ -255,7 +254,7 @@ TEST(GlslangCompile, FragmentShaderProducesNonEmptySpirv) {
 
     vne::sc::CompileRequest req;
     req.source = kFragGlsl;
-    req.stage  = vne::sc::ShaderStage::eFragment;
+    req.stage = vne::sc::ShaderStage::eFragment;
 
     auto cr = fe->compile(req);
     EXPECT_TRUE(cr.ok()) << (cr.errors.empty() ? "" : cr.errors[0]);
@@ -268,7 +267,7 @@ TEST(GlslangCompile, InvalidGlslReturnsCompileFailed) {
 
     vne::sc::CompileRequest req;
     req.source = "#version 450\nvoid main() { SYNTAX ERROR HERE }";
-    req.stage  = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
 
     auto cr = fe->compile(req);
     EXPECT_FALSE(cr.ok());
@@ -297,7 +296,7 @@ TEST(GlslangCompile, MacrosAreInjectedIntoPreamble) {
         #endif
         void main() {}
     )glsl";
-    req.stage  = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
     req.macros = {{"MY_VALUE", "1"}};
 
     auto cr = fe->compile(req);
@@ -314,22 +313,22 @@ TEST(Reflection, VertexShaderWithUboProducesJson) {
 
     vne::sc::CompileRequest req;
     req.source = kVertGlsl;
-    req.stage  = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
     auto cr = fe->compile(req);
     ASSERT_TRUE(cr.ok());
 
     auto reflector = vne::sc::ShaderCompilerFactory::createReflector();
-    auto rr        = reflector->reflectToJson(cr.spirv, req.stage);
+    auto rr = reflector->reflectToJson(cr.spirv, req.stage);
 
     EXPECT_TRUE(rr.ok()) << rr.error;
     EXPECT_FALSE(rr.json.empty());
     EXPECT_NE(rr.json.find("uniform_buffer"), std::string::npos);
-    EXPECT_NE(rr.json.find("Matrices"),       std::string::npos);
+    EXPECT_NE(rr.json.find("Matrices"), std::string::npos);
 }
 
 TEST(Reflection, EmptySpirvReturnsError) {
     auto reflector = vne::sc::ShaderCompilerFactory::createReflector();
-    auto rr        = reflector->reflectToJson({}, vne::sc::ShaderStage::eVertex);
+    auto rr = reflector->reflectToJson({}, vne::sc::ShaderStage::eVertex);
     EXPECT_FALSE(rr.ok());
     EXPECT_EQ(rr.code, vne::sc::ResultCode::eReflectionFailed);
 }
@@ -344,15 +343,15 @@ TEST(CrossCompile, VertexToMslProducesNonEmptySource) {
 
     vne::sc::CompileRequest req;
     req.source = kVertGlsl;
-    req.stage  = vne::sc::ShaderStage::eVertex;
-    auto cr    = fe->compile(req);
+    req.stage = vne::sc::ShaderStage::eVertex;
+    auto cr = fe->compile(req);
     ASSERT_TRUE(cr.ok());
 
     auto cc_compiler = vne::sc::ShaderCompilerFactory::createCrossCompiler();
     vne::sc::CrossCompileRequest ccr;
-    ccr.spirv  = cr.spirv;
+    ccr.spirv = cr.spirv;
     ccr.target = vne::sc::CrossTarget::eMSL;
-    ccr.stage  = vne::sc::ShaderStage::eVertex;
+    ccr.stage = vne::sc::ShaderStage::eVertex;
 
     auto ccres = cc_compiler->crossCompile(ccr);
     EXPECT_TRUE(ccres.ok()) << ccres.error;
@@ -363,9 +362,9 @@ TEST(CrossCompile, VertexToMslProducesNonEmptySource) {
 TEST(CrossCompile, WgslReturnsUnavailable) {
     auto cc_compiler = vne::sc::ShaderCompilerFactory::createCrossCompiler();
     vne::sc::CrossCompileRequest ccr;
-    ccr.spirv  = {0x07230203u};  // minimal non-empty SPIR-V
+    ccr.spirv = {0x07230203u};  // minimal non-empty SPIR-V
     ccr.target = vne::sc::CrossTarget::eWGSL;
-    ccr.stage  = vne::sc::ShaderStage::eVertex;
+    ccr.stage = vne::sc::ShaderStage::eVertex;
 
     auto ccres = cc_compiler->crossCompile(ccr);
     EXPECT_FALSE(ccres.ok());
@@ -377,23 +376,22 @@ TEST(CrossCompile, WgslReturnsUnavailable) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 TEST(Pipeline, FullBuildProducesValidArtifact) {
-    auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(
-        vne::sc::SourceLang::eGLSL);
+    auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(vne::sc::SourceLang::eGLSL);
 
     vne::sc::PipelineBuildDesc desc;
-    desc.name      = "test_pipeline";
-    desc.validate  = false;
+    desc.name = "test_pipeline";
+    desc.validate = false;
     desc.use_cache = false;
-    desc.targets   = {vne::sc::CrossTarget::eMSL};
+    desc.targets = {vne::sc::CrossTarget::eMSL};
 
     vne::sc::CompileRequest vert;
     vert.source = kVertGlsl;
-    vert.stage  = vne::sc::ShaderStage::eVertex;
+    vert.stage = vne::sc::ShaderStage::eVertex;
     desc.stages.push_back(vert);
 
     vne::sc::CompileRequest frag;
     frag.source = kFragGlsl;
-    frag.stage  = vne::sc::ShaderStage::eFragment;
+    frag.stage = vne::sc::ShaderStage::eFragment;
     desc.stages.push_back(frag);
 
     auto result = builder->build(desc);
@@ -417,19 +415,18 @@ TEST(Pipeline, CacheHitSkipsRecompilation) {
     auto tmp = fs::temp_directory_path() / "vnesc_cache_test_pipeline";
     fs::remove_all(tmp);
 
-    auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(
-        vne::sc::SourceLang::eGLSL);
+    auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(vne::sc::SourceLang::eGLSL);
 
     vne::sc::PipelineBuildDesc desc;
-    desc.name      = "cached_pipeline";
-    desc.validate  = false;
+    desc.name = "cached_pipeline";
+    desc.validate = false;
     desc.use_cache = true;
     desc.cache_dir = tmp.string();
-    desc.targets   = {vne::sc::CrossTarget::eMSL};
+    desc.targets = {vne::sc::CrossTarget::eMSL};
 
     vne::sc::CompileRequest req;
     req.source = kVertGlsl;
-    req.stage  = vne::sc::ShaderStage::eVertex;
+    req.stage = vne::sc::ShaderStage::eVertex;
     desc.stages.push_back(req);
 
     // First build — populates the cache.
@@ -440,8 +437,7 @@ TEST(Pipeline, CacheHitSkipsRecompilation) {
     auto r2 = builder->build(desc);
     ASSERT_TRUE(r2.ok()) << r2.error;
 
-    EXPECT_EQ(r1.artifact.stages[0].spirv,
-              r2.artifact.stages[0].spirv);
+    EXPECT_EQ(r1.artifact.stages[0].spirv, r2.artifact.stages[0].spirv);
 
     fs::remove_all(tmp);
 }

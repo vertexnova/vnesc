@@ -59,13 +59,11 @@ std::shared_ptr<IShaderValidator> ShaderCompilerFactory::createValidator() {
 #endif
 }
 
-std::shared_ptr<IShaderPipelineBuilder>
-ShaderCompilerFactory::createPipelineBuilder(SourceLang lang) {
-    return std::make_shared<ShaderPipelineBuilder>(
-        createFrontEnd(lang),
-        createCrossCompiler(),
-        createReflector(),
-        createValidator());
+std::shared_ptr<IShaderPipelineBuilder> ShaderCompilerFactory::createPipelineBuilder(SourceLang lang) {
+    return std::make_shared<ShaderPipelineBuilder>(createFrontEnd(lang),
+                                                   createCrossCompiler(),
+                                                   createReflector(),
+                                                   createValidator());
 }
 
 }  // namespace vne::sc

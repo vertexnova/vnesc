@@ -23,7 +23,7 @@ namespace vne::sc {
  * compiled in — it always returns @ref ResultCode::eSuccess.
  */
 class IShaderValidator {
-public:
+   public:
     virtual ~IShaderValidator() = default;
 
     /**

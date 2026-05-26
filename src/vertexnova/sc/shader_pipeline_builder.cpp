@@ -19,11 +19,10 @@
 
 namespace vne::sc {
 
-ShaderPipelineBuilder::ShaderPipelineBuilder(
-    std::shared_ptr<IShaderFrontEnd>      front_end,
-    std::shared_ptr<IShaderCrossCompiler> cross_compiler,
-    std::shared_ptr<IShaderReflector>     reflector,
-    std::shared_ptr<IShaderValidator>     validator)
+ShaderPipelineBuilder::ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd> front_end,
+                                             std::shared_ptr<IShaderCrossCompiler> cross_compiler,
+                                             std::shared_ptr<IShaderReflector> reflector,
+                                             std::shared_ptr<IShaderValidator> validator)
     : front_end_(std::move(front_end))
     , cross_compiler_(std::move(cross_compiler))
     , reflector_(std::move(reflector))
@@ -31,11 +30,11 @@ ShaderPipelineBuilder::ShaderPipelineBuilder(
 
 PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) {
     PipelineBuildResult result;
-    result.artifact.name        = desc.name;
+    result.artifact.name = desc.name;
     result.artifact.source_lang = desc.stages.empty() ? SourceLang::eGLSL : desc.stages[0].lang;
 
     if (!front_end_ || !front_end_->isAvailable()) {
-        result.code  = ResultCode::eUnavailable;
+        result.code = ResultCode::eUnavailable;
         result.error = "ShaderPipelineBuilder: front-end not available";
         return result;
     }
@@ -47,9 +46,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
 
     for (const auto& req : desc.stages) {
         // ── Cache lookup ────────────────────────────────────────────────────
-        const std::string key = cache
-            ? ShaderArtifactCache::makeKey(req, desc.targets)
-            : std::string{};
+        const std::string key = cache ? ShaderArtifactCache::makeKey(req, desc.targets) : std::string{};
 
         if (cache) {
             auto cached = cache->lookup(key);
@@ -60,7 +57,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         }
 
         StageArtifact stage_artifact;
-        stage_artifact.stage       = req.stage;
+        stage_artifact.stage = req.stage;
         stage_artifact.entry_point = req.entry_point;
 
         // ── 1. Compile → SPIR-V ─���──────────────────────────────────────────
@@ -68,7 +65,8 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (!cr.ok()) {
             result.code = cr.code;
             result.error = "ShaderPipelineBuilder: compile failed";
-            for (const auto& e : cr.errors) result.error += "\n  " + e;
+            for (const auto& e : cr.errors)
+                result.error += "\n  " + e;
             return result;
         }
         stage_artifact.spirv = std::move(cr.spirv);
@@ -77,7 +75,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (desc.validate && validator_ && validator_->isAvailable()) {
             ValidationResult vr = validator_->validate(stage_artifact.spirv);
             if (!vr.ok()) {
-                result.code  = ResultCode::eValidationFailed;
+                result.code = ResultCode::eValidationFailed;
                 result.error = "ShaderPipelineBuilder: SPIR-V validation failed: " + vr.error;
                 return result;
             }
@@ -96,15 +94,15 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
         if (cross_compiler_) {
             for (CrossTarget target : desc.targets) {
                 CrossCompileRequest ccr;
-                ccr.spirv   = stage_artifact.spirv;
-                ccr.target  = target;
-                ccr.stage   = req.stage;
+                ccr.spirv = stage_artifact.spirv;
+                ccr.target = target;
+                ccr.stage = req.stage;
 
                 CrossCompileResult ccres = cross_compiler_->crossCompile(ccr);
                 if (ccres.ok()) {
                     CrossCompiledSource cc;
-                    cc.target      = target;
-                    cc.source      = std::move(ccres.source);
+                    cc.target = target;
+                    cc.source = std::move(ccres.source);
                     cc.entry_point = std::move(ccres.entry_point);
                     stage_artifact.cross_compiled.push_back(std::move(cc));
                 }

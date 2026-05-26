@@ -17,7 +17,7 @@ namespace vne::sc {
  * @brief Translates a SPIR-V binary into a target shading language (MSL, GLSL, …).
  */
 class IShaderCrossCompiler {
-public:
+   public:
     virtual ~IShaderCrossCompiler() = default;
 
     /**

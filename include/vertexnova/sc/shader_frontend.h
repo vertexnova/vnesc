@@ -20,7 +20,7 @@ namespace vne::sc {
  * Callers should check @ref isAvailable before calling @ref compile.
  */
 class IShaderFrontEnd {
-public:
+   public:
     virtual ~IShaderFrontEnd() = default;
 
     /**

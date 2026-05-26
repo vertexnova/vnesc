@@ -20,7 +20,7 @@ namespace vne::sc {
  * return @ref ResultCode::eUnavailable.
  */
 class SpirvCrossCrossCompiler final : public IShaderCrossCompiler {
-public:
+   public:
     bool isAvailable() const noexcept override;
     CrossCompileResult crossCompile(const CrossCompileRequest& req) override;
 
@@ -37,7 +37,7 @@ public:
      */
     static void fixMSLFragmentSignature(std::string& frag_msl, const std::string& vert_msl);
 
-private:
+   private:
     CrossCompileResult toMSL(const CrossCompileRequest& req);
     CrossCompileResult toGLSL(const CrossCompileRequest& req, bool es);
     CrossCompileResult toWGSL(const CrossCompileRequest& req);

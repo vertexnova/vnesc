@@ -22,7 +22,7 @@ namespace {
 
 // ── Metal binding constants (must match kFlattenBinding / kMetalUboBase in cross-compiler) ──
 constexpr uint32_t kFlattenBinding = 32u;
-constexpr uint32_t kMetalUboBase   = 16u;
+constexpr uint32_t kMetalUboBase = 16u;
 
 inline uint32_t metalBuf(uint32_t set, uint32_t binding) noexcept {
     return kMetalUboBase + (set * kFlattenBinding + binding);
@@ -38,14 +38,22 @@ inline uint32_t metalSmp(uint32_t set, uint32_t binding) noexcept {
 const char* typeStr(vne::sc::ReflectedResourceType t) noexcept {
     using T = vne::sc::ReflectedResourceType;
     switch (t) {
-        case T::eUniformBuffer:       return "uniform_buffer";
-        case T::eStorageBuffer:       return "storage_buffer";
-        case T::eSampledImage:        return "sampled_image";
-        case T::eSampledCubemap:      return "sampled_image";  // same tag; runtime distinguishes via size hint
-        case T::eStorageImage:        return "storage_image";
-        case T::eSampler:             return "sampler";
-        case T::ePushConstant:        return "push_constant";
-        case T::eCombinedImageSampler: return "combined_image_sampler";
+        case T::eUniformBuffer:
+            return "uniform_buffer";
+        case T::eStorageBuffer:
+            return "storage_buffer";
+        case T::eSampledImage:
+            return "sampled_image";
+        case T::eSampledCubemap:
+            return "sampled_image";  // same tag; runtime distinguishes via size hint
+        case T::eStorageImage:
+            return "storage_image";
+        case T::eSampler:
+            return "sampler";
+        case T::ePushConstant:
+            return "push_constant";
+        case T::eCombinedImageSampler:
+            return "combined_image_sampler";
     }
     return "uniform_buffer";
 }
@@ -53,12 +61,18 @@ const char* typeStr(vne::sc::ReflectedResourceType t) noexcept {
 const char* stageStr(vne::sc::ShaderStage s) noexcept {
     using S = vne::sc::ShaderStage;
     switch (s) {
-        case S::eVertex:                  return "vertex";
-        case S::eFragment:                return "fragment";
-        case S::eCompute:                 return "compute";
-        case S::eGeometry:                return "geometry";
-        case S::eTessellationControl:     return "tess_control";
-        case S::eTessellationEvaluation:  return "tess_eval";
+        case S::eVertex:
+            return "vertex";
+        case S::eFragment:
+            return "fragment";
+        case S::eCompute:
+            return "compute";
+        case S::eGeometry:
+            return "geometry";
+        case S::eTessellationControl:
+            return "tess_control";
+        case S::eTessellationEvaluation:
+            return "tess_eval";
     }
     return "vertex";
 }
@@ -70,12 +84,19 @@ std::string jsonStr(const std::string& s) {
     out.reserve(s.size() + 2);
     out += '"';
     for (char c : s) {
-        if (c == '"') { out += "\\\""; }
-        else if (c == '\\') { out += "\\\\"; }
-        else if (c == '\n') { out += "\\n"; }
-        else if (c == '\r') { out += "\\r"; }
-        else if (c == '\t') { out += "\\t"; }
-        else { out += c; }
+        if (c == '"') {
+            out += "\\\"";
+        } else if (c == '\\') {
+            out += "\\\\";
+        } else if (c == '\n') {
+            out += "\\n";
+        } else if (c == '\r') {
+            out += "\\r";
+        } else if (c == '\t') {
+            out += "\\t";
+        } else {
+            out += c;
+        }
     }
     out += '"';
     return out;
@@ -83,14 +104,14 @@ std::string jsonStr(const std::string& s) {
 
 // ── Process one resource list, appending JSON binding objects ─────────────────
 template<vne::sc::ReflectedResourceType Type>
-void appendBindings(const spirv_cross::Compiler&    compiler,
-                    const spirv_cross::CompilerMSL&  msl,
+void appendBindings(const spirv_cross::Compiler& compiler,
+                    const spirv_cross::CompilerMSL& msl,
                     const spirv_cross::SmallVector<spirv_cross::Resource>& list,
-                    vne::sc::ShaderStage             stage,
-                    std::ostringstream&              json,
-                    bool&                            first) {
+                    vne::sc::ShaderStage stage,
+                    std::ostringstream& json,
+                    bool& first) {
     for (const auto& res : list) {
-        uint32_t set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+        uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
         uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
         const spirv_cross::SPIRType& ty = compiler.get_type(res.type_id);
@@ -98,12 +119,13 @@ void appendBindings(const spirv_cross::Compiler&    compiler,
 
         // Buffer size (for uniform/storage buffers)
         uint32_t size = 0;
-        if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer ||
-                      Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
+        if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer
+                      || Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
             try {
                 const spirv_cross::SPIRType& block = compiler.get_type(res.base_type_id);
                 size = static_cast<uint32_t>(compiler.get_declared_struct_size(block));
-            } catch (...) {}
+            } catch (...) {
+            }
         }
 
         // Detect cubemap
@@ -115,34 +137,36 @@ void appendBindings(const spirv_cross::Compiler&    compiler,
         }
 
         // Metal automatic binding slot via CompilerMSL
-        uint32_t metal_buf  = 0;
-        uint32_t metal_tex  = 0;
-        uint32_t metal_smp  = 0;
-        bool     metal_ok   = false;
+        uint32_t metal_buf = 0;
+        uint32_t metal_tex = 0;
+        uint32_t metal_smp = 0;
+        bool metal_ok = false;
         try {
             uint32_t primary = msl.get_automatic_msl_resource_binding(res.id);
             if (primary != ~0u) {
                 metal_ok = true;
-                if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer ||
-                              Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
+                if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer
+                              || Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
                     metal_buf = primary;
-                } else if constexpr (Type == vne::sc::ReflectedResourceType::eSampledImage ||
-                                     Type == vne::sc::ReflectedResourceType::eStorageImage) {
+                } else if constexpr (Type == vne::sc::ReflectedResourceType::eSampledImage
+                                     || Type == vne::sc::ReflectedResourceType::eStorageImage) {
                     metal_tex = primary;
                 } else if constexpr (Type == vne::sc::ReflectedResourceType::eSampler) {
                     metal_smp = primary;
                 } else if constexpr (Type == vne::sc::ReflectedResourceType::eCombinedImageSampler) {
                     metal_tex = primary;
                     uint32_t sec = msl.get_automatic_msl_resource_binding_secondary(res.id);
-                    if (sec != ~0u) metal_smp = sec;
+                    if (sec != ~0u)
+                        metal_smp = sec;
                 }
             }
-        } catch (...) {}
+        } catch (...) {
+        }
 
         // Fallback: derive from formula if MSL API didn't provide a slot
         if (!metal_ok) {
-            if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer ||
-                          Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
+            if constexpr (Type == vne::sc::ReflectedResourceType::eUniformBuffer
+                          || Type == vne::sc::ReflectedResourceType::eStorageBuffer) {
                 metal_buf = metalBuf(set, binding);
             } else {
                 metal_tex = metalTex(set, binding);
@@ -150,7 +174,8 @@ void appendBindings(const spirv_cross::Compiler&    compiler,
             }
         }
 
-        if (!first) json << ",";
+        if (!first)
+            json << ",";
         first = false;
 
         json << "\n    {"
@@ -162,8 +187,7 @@ void appendBindings(const spirv_cross::Compiler&    compiler,
              << "\n      \"array_size\":" << array_size << ","
              << "\n      \"stages\":[" << jsonStr(stageStr(stage)) << "],"
              << "\n      \"overrides\":{"
-             << "\n        \"metal\":{\"buffer\":" << metal_buf
-             << ",\"texture\":" << metal_tex
+             << "\n        \"metal\":{\"buffer\":" << metal_buf << ",\"texture\":" << metal_tex
              << ",\"sampler\":" << metal_smp << "},"
              << "\n        \"wgpu\":{\"group\":" << set << ",\"binding\":" << binding << "}"
              << "\n      }"
@@ -175,11 +199,10 @@ void appendBindings(const spirv_cross::Compiler&    compiler,
 
 namespace vne::sc {
 
-ReflectResult SpirvCrossReflector::reflectToJson(const std::vector<uint32_t>& spirv,
-                                                  ShaderStage stage) {
+ReflectResult SpirvCrossReflector::reflectToJson(const std::vector<uint32_t>& spirv, ShaderStage stage) {
     ReflectResult result;
     if (spirv.empty()) {
-        result.code  = ResultCode::eReflectionFailed;
+        result.code = ResultCode::eReflectionFailed;
         result.error = "SpirvCrossReflector: empty SPIR-V";
         return result;
     }
@@ -209,20 +232,45 @@ ReflectResult SpirvCrossReflector::reflectToJson(const std::vector<uint32_t>& sp
         json << "\n  \"bindings\":[";
         bool first = true;
 
-        appendBindings<ReflectedResourceType::eUniformBuffer>(
-            compiler, msl_compiler, resources.uniform_buffers, stage, json, first);
-        appendBindings<ReflectedResourceType::eStorageBuffer>(
-            compiler, msl_compiler, resources.storage_buffers, stage, json, first);
-        appendBindings<ReflectedResourceType::eSampledImage>(
-            compiler, msl_compiler, resources.separate_images, stage, json, first);
-        appendBindings<ReflectedResourceType::eStorageImage>(
-            compiler, msl_compiler, resources.storage_images, stage, json, first);
-        appendBindings<ReflectedResourceType::eSampler>(
-            compiler, msl_compiler, resources.separate_samplers, stage, json, first);
-        appendBindings<ReflectedResourceType::eCombinedImageSampler>(
-            compiler, msl_compiler, resources.sampled_images, stage, json, first);
+        appendBindings<ReflectedResourceType::eUniformBuffer>(compiler,
+                                                              msl_compiler,
+                                                              resources.uniform_buffers,
+                                                              stage,
+                                                              json,
+                                                              first);
+        appendBindings<ReflectedResourceType::eStorageBuffer>(compiler,
+                                                              msl_compiler,
+                                                              resources.storage_buffers,
+                                                              stage,
+                                                              json,
+                                                              first);
+        appendBindings<ReflectedResourceType::eSampledImage>(compiler,
+                                                             msl_compiler,
+                                                             resources.separate_images,
+                                                             stage,
+                                                             json,
+                                                             first);
+        appendBindings<ReflectedResourceType::eStorageImage>(compiler,
+                                                             msl_compiler,
+                                                             resources.storage_images,
+                                                             stage,
+                                                             json,
+                                                             first);
+        appendBindings<ReflectedResourceType::eSampler>(compiler,
+                                                        msl_compiler,
+                                                        resources.separate_samplers,
+                                                        stage,
+                                                        json,
+                                                        first);
+        appendBindings<ReflectedResourceType::eCombinedImageSampler>(compiler,
+                                                                     msl_compiler,
+                                                                     resources.sampled_images,
+                                                                     stage,
+                                                                     json,
+                                                                     first);
 
-        if (!first) json << "\n  ";
+        if (!first)
+            json << "\n  ";
         json << "]";
         json << "\n}";
 
@@ -231,7 +279,7 @@ ReflectResult SpirvCrossReflector::reflectToJson(const std::vector<uint32_t>& sp
         return result;
 
     } catch (const std::exception& e) {
-        result.code  = ResultCode::eReflectionFailed;
+        result.code = ResultCode::eReflectionFailed;
         result.error = std::string("SpirvCrossReflector: ") + e.what();
         return result;
     }

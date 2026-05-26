@@ -33,18 +33,18 @@ class IShaderPipelineBuilder;
  * @endcode
  */
 class ShaderCompilerFactory {
-public:
+   public:
     /// Creates a front-end for the given source language.
-    static std::shared_ptr<IShaderFrontEnd>      createFrontEnd(SourceLang lang);
+    static std::shared_ptr<IShaderFrontEnd> createFrontEnd(SourceLang lang);
 
     /// Creates the SPIR-V → target cross-compiler.
     static std::shared_ptr<IShaderCrossCompiler> createCrossCompiler();
 
     /// Creates the SPIR-V reflector.
-    static std::shared_ptr<IShaderReflector>     createReflector();
+    static std::shared_ptr<IShaderReflector> createReflector();
 
     /// Creates the SPIR-V validator (no-op when the validation library is absent).
-    static std::shared_ptr<IShaderValidator>     createValidator();
+    static std::shared_ptr<IShaderValidator> createValidator();
 
     /**
      * @brief Convenience factory: assembles a fully-wired pipeline builder.

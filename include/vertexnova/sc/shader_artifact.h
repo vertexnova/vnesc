@@ -23,19 +23,19 @@ namespace vne::sc {
  * @brief Cross-compiled source text for a single target shading language.
  */
 struct CrossCompiledSource {
-    CrossTarget target;      ///< Target language this source was compiled to.
-    std::string source;      ///< Cross-compiled source text.
-    std::string entry_point; ///< Entry-point name as it appears in the output source.
+    CrossTarget target;       ///< Target language this source was compiled to.
+    std::string source;       ///< Cross-compiled source text.
+    std::string entry_point;  ///< Entry-point name as it appears in the output source.
 };
 
 /**
  * @brief All compiler outputs for a single shader stage.
  */
 struct StageArtifact {
-    ShaderStage                      stage;
-    std::string                      entry_point;
-    std::vector<uint32_t>            spirv;           ///< SPIR-V binary words.
-    std::string                      reflection_json;  ///< Serialised stage reflection.
+    ShaderStage stage;
+    std::string entry_point;
+    std::vector<uint32_t> spirv;                      ///< SPIR-V binary words.
+    std::string reflection_json;                      ///< Serialised stage reflection.
     std::vector<CrossCompiledSource> cross_compiled;  ///< One entry per requested target.
 
     /**
@@ -44,7 +44,9 @@ struct StageArtifact {
      */
     const CrossCompiledSource* findCrossCompiled(CrossTarget target) const noexcept {
         for (const auto& cc : cross_compiled) {
-            if (cc.target == target) { return &cc; }
+            if (cc.target == target) {
+                return &cc;
+            }
         }
         return nullptr;
     }
@@ -54,8 +56,8 @@ struct StageArtifact {
  * @brief Bundle of per-stage artifacts representing a complete compiled shader program.
  */
 struct ShaderArtifact {
-    std::string                name;
-    SourceLang                 source_lang = SourceLang::eGLSL;
+    std::string name;
+    SourceLang source_lang = SourceLang::eGLSL;
     std::vector<StageArtifact> stages;
 
     /**
@@ -64,7 +66,9 @@ struct ShaderArtifact {
      */
     const StageArtifact* findStage(ShaderStage stage) const noexcept {
         for (const auto& s : stages) {
-            if (s.stage == stage) { return &s; }
+            if (s.stage == stage) {
+                return &s;
+            }
         }
         return nullptr;
     }
@@ -73,9 +77,13 @@ struct ShaderArtifact {
      * @brief Returns @c true when all stages have non-empty SPIR-V.
      */
     bool isValid() const noexcept {
-        if (stages.empty()) { return false; }
+        if (stages.empty()) {
+            return false;
+        }
         for (const auto& s : stages) {
-            if (s.spirv.empty()) { return false; }
+            if (s.spirv.empty()) {
+                return false;
+            }
         }
         return true;
     }

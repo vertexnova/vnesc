@@ -25,16 +25,16 @@ namespace vne::sc {
  * Negative values indicate failure.
  */
 enum class ResultCode : int32_t {
-    eSuccess            =  0, ///< Operation completed without errors.
-    eCompileWarnings    =  1, ///< Compilation succeeded but generated warnings.
-    eCompileFailed      = -1, ///< Source code could not be compiled.
-    eCrossCompileFailed = -2, ///< SPIR-V → target cross-compilation failed.
-    eReflectionFailed   = -3, ///< SPIR-V reflection could not be completed.
-    eValidationFailed   = -4, ///< SPIR-V validation failed.
-    eFileNotFound       = -5, ///< Source file does not exist.
-    eUnavailable        = -6, ///< The requested front-end or feature is not compiled in.
-    eInvalidArgument    = -7, ///< A required argument is missing or malformed.
-    eCacheMiss          = -8, ///< No cached artifact was found for the given key.
+    eSuccess = 0,              ///< Operation completed without errors.
+    eCompileWarnings = 1,      ///< Compilation succeeded but generated warnings.
+    eCompileFailed = -1,       ///< Source code could not be compiled.
+    eCrossCompileFailed = -2,  ///< SPIR-V → target cross-compilation failed.
+    eReflectionFailed = -3,    ///< SPIR-V reflection could not be completed.
+    eValidationFailed = -4,    ///< SPIR-V validation failed.
+    eFileNotFound = -5,        ///< Source file does not exist.
+    eUnavailable = -6,         ///< The requested front-end or feature is not compiled in.
+    eInvalidArgument = -7,     ///< A required argument is missing or malformed.
+    eCacheMiss = -8,           ///< No cached artifact was found for the given key.
 };
 
 /// @returns @c true when @p code represents a successful outcome.
@@ -48,10 +48,10 @@ inline bool succeeded(ResultCode code) noexcept {
 
 /// Result of a source-to-SPIR-V compilation.
 struct CompileResult {
-    ResultCode                code     = ResultCode::eCompileFailed;
-    std::vector<uint32_t>     spirv;    ///< SPIR-V words; non-empty on success.
-    std::vector<std::string>  errors;
-    std::vector<std::string>  warnings;
+    ResultCode code = ResultCode::eCompileFailed;
+    std::vector<uint32_t> spirv;  ///< SPIR-V words; non-empty on success.
+    std::vector<std::string> errors;
+    std::vector<std::string> warnings;
 
     /// @returns @c true when the compilation produced valid SPIR-V.
     bool ok() const noexcept { return succeeded(code); }
@@ -59,9 +59,9 @@ struct CompileResult {
 
 /// Result of a SPIR-V → shading-language cross-compilation.
 struct CrossCompileResult {
-    ResultCode  code        = ResultCode::eCrossCompileFailed;
-    std::string source;      ///< Cross-compiled source text (MSL, GLSL, …).
-    std::string entry_point; ///< Actual entry-point name in the output source.
+    ResultCode code = ResultCode::eCrossCompileFailed;
+    std::string source;       ///< Cross-compiled source text (MSL, GLSL, …).
+    std::string entry_point;  ///< Actual entry-point name in the output source.
     std::string error;
 
     bool ok() const noexcept { return succeeded(code); }
@@ -69,7 +69,7 @@ struct CrossCompileResult {
 
 /// Result of a SPIR-V validation check.
 struct ValidationResult {
-    ResultCode  code  = ResultCode::eValidationFailed;
+    ResultCode code = ResultCode::eValidationFailed;
     std::string error;
 
     bool ok() const noexcept { return succeeded(code); }
@@ -77,7 +77,7 @@ struct ValidationResult {
 
 /// Result of a SPIR-V reflection pass.
 struct ReflectResult {
-    ResultCode  code  = ResultCode::eReflectionFailed;
+    ResultCode code = ResultCode::eReflectionFailed;
     std::string json;  ///< Serialised stage reflection as JSON; empty on failure.
     std::string error;
 

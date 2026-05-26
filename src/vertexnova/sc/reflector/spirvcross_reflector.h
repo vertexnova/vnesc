@@ -20,9 +20,8 @@ namespace vne::sc {
  * and includes Metal and WebGPU binding slot overrides for each resource.
  */
 class SpirvCrossReflector final : public IShaderReflector {
-public:
-    ReflectResult reflectToJson(const std::vector<uint32_t>& spirv,
-                                ShaderStage stage) override;
+   public:
+    ReflectResult reflectToJson(const std::vector<uint32_t>& spirv, ShaderStage stage) override;
 };
 
 }  // namespace vne::sc

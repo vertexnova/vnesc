@@ -19,7 +19,7 @@ namespace vne::sc {
  * @brief Validates SPIR-V binaries against the Vulkan rules using SPIRV-Tools.
  */
 class SpirvToolsValidator final : public IShaderValidator {
-public:
+   public:
     bool isAvailable() const noexcept override;
     ValidationResult validate(const std::vector<uint32_t>& spirv) override;
 };

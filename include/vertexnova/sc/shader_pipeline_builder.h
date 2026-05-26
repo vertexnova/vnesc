@@ -31,21 +31,21 @@ class IShaderValidator;
  * @brief Describes a complete pipeline build job — all stages and targets.
  */
 struct PipelineBuildDesc {
-    std::string                 name;
-    std::vector<CompileRequest> stages;   ///< One entry per shader stage.
-    std::vector<CrossTarget>    targets;  ///< Cross-compilation targets (e.g. MSL, WGSL).
-    bool                        validate  = true;  ///< Run SPIR-V validation after compilation.
-    bool                        use_cache = true;  ///< Enable the file-based artifact cache.
-    std::string                 cache_dir;         ///< Cache root directory; empty disables caching.
+    std::string name;
+    std::vector<CompileRequest> stages;  ///< One entry per shader stage.
+    std::vector<CrossTarget> targets;    ///< Cross-compilation targets (e.g. MSL, WGSL).
+    bool validate = true;                ///< Run SPIR-V validation after compilation.
+    bool use_cache = true;               ///< Enable the file-based artifact cache.
+    std::string cache_dir;               ///< Cache root directory; empty disables caching.
 };
 
 /**
  * @brief Result returned by @ref IShaderPipelineBuilder::build.
  */
 struct PipelineBuildResult {
-    ResultCode     code = ResultCode::eCompileFailed;
+    ResultCode code = ResultCode::eCompileFailed;
     ShaderArtifact artifact;
-    std::string    error;
+    std::string error;
 
     bool ok() const noexcept { return succeeded(code); }
 };
@@ -67,7 +67,7 @@ struct PipelineBuildResult {
  *  -# Cache store.
  */
 class IShaderPipelineBuilder {
-public:
+   public:
     virtual ~IShaderPipelineBuilder() = default;
 
     /**
@@ -87,19 +87,19 @@ public:
  * replaced for testing.
  */
 class ShaderPipelineBuilder : public IShaderPipelineBuilder {
-public:
-    ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd>      front_end,
-                          std::shared_ptr<IShaderCrossCompiler>  cross_compiler,
-                          std::shared_ptr<IShaderReflector>      reflector,
-                          std::shared_ptr<IShaderValidator>      validator);
+   public:
+    ShaderPipelineBuilder(std::shared_ptr<IShaderFrontEnd> front_end,
+                          std::shared_ptr<IShaderCrossCompiler> cross_compiler,
+                          std::shared_ptr<IShaderReflector> reflector,
+                          std::shared_ptr<IShaderValidator> validator);
 
     PipelineBuildResult build(const PipelineBuildDesc& desc) override;
 
-private:
-    std::shared_ptr<IShaderFrontEnd>      front_end_;
+   private:
+    std::shared_ptr<IShaderFrontEnd> front_end_;
     std::shared_ptr<IShaderCrossCompiler> cross_compiler_;
-    std::shared_ptr<IShaderReflector>     reflector_;
-    std::shared_ptr<IShaderValidator>     validator_;
+    std::shared_ptr<IShaderReflector> reflector_;
+    std::shared_ptr<IShaderValidator> validator_;
 };
 
 }  // namespace vne::sc

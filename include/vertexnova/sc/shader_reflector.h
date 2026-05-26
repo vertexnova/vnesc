@@ -24,7 +24,7 @@ namespace vne::sc {
  * together with their backend-specific binding indices.
  */
 class IShaderReflector {
-public:
+   public:
     virtual ~IShaderReflector() = default;
 
     /**
@@ -33,8 +33,7 @@ public:
      * @param stage  Pipeline stage the module belongs to.
      * @returns A @ref ReflectResult whose @c json is non-empty on success.
      */
-    virtual ReflectResult reflectToJson(const std::vector<uint32_t>& spirv,
-                                        ShaderStage stage) = 0;
+    virtual ReflectResult reflectToJson(const std::vector<uint32_t>& spirv, ShaderStage stage) = 0;
 };
 
 }  // namespace vne::sc

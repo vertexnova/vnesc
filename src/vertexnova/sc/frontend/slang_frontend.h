@@ -21,7 +21,7 @@ namespace vne::sc {
  * @note SFI — stub.  All methods are no-ops until the Slang back-end is implemented.
  */
 class SlangFrontEnd final : public IShaderFrontEnd {
-public:
+   public:
     bool isAvailable() const noexcept override { return false; }
 
     CompileResult compile(const CompileRequest& req) override {
