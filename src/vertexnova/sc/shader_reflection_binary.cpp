@@ -7,7 +7,6 @@
 #include "vertexnova/sc/shader_reflection_binary.h"
 
 #include <sstream>
-#include <stdexcept>
 
 namespace {
 
@@ -32,7 +31,8 @@ struct Reader {
     const size_t data_size_;
 
     explicit Reader(const std::string& data)
-        : is(data, std::ios::binary), data_size_(data.size()) {}
+        : is(data, std::ios::binary)
+        , data_size_(data.size()) {}
 
     size_t remaining() {
         const auto pos = is.tellg();
@@ -42,45 +42,86 @@ struct Reader {
         return data_size_ - static_cast<size_t>(pos);
     }
 
+    void fail() { is.setstate(std::ios::failbit); }
+
     void require_bytes(size_t n) {
+        if (!ok()) {
+            return;
+        }
         if (remaining() < n) {
-            throw std::runtime_error("truncated reflection binary");
+            fail();
         }
     }
 
     uint8_t u8() {
+        if (!ok()) {
+            return 0;
+        }
         require_bytes(1);
+        if (!ok()) {
+            return 0;
+        }
         uint8_t v{};
         is.read(reinterpret_cast<char*>(&v), 1);
+        if (is.gcount() != 1) {
+            fail();
+        }
         return v;
     }
     uint32_t u32() {
+        if (!ok()) {
+            return 0;
+        }
         require_bytes(4);
+        if (!ok()) {
+            return 0;
+        }
         uint32_t v{};
         is.read(reinterpret_cast<char*>(&v), 4);
+        if (is.gcount() != 4) {
+            fail();
+        }
         return v;
     }
     uint32_t bounded_count(uint32_t max_count) {
         const uint32_t count = u32();
+        if (!ok()) {
+            return 0;
+        }
         if (count > max_count) {
-            throw std::runtime_error("reflection count exceeds maximum");
+            fail();
+            return 0;
         }
         return count;
     }
     bool boolean() { return u8() != 0u; }
     std::string str() {
+        if (!ok()) {
+            return {};
+        }
         const uint32_t len = u32();
+        if (!ok()) {
+            return {};
+        }
         if (len > kMaxStringLen) {
-            throw std::runtime_error("reflection string length exceeds maximum");
+            fail();
+            return {};
         }
         require_bytes(len);
+        if (!ok()) {
+            return {};
+        }
         std::string s(len, '\0');
         if (len > 0) {
             is.read(s.data(), static_cast<std::streamsize>(len));
+            if (static_cast<uint32_t>(is.gcount()) != len) {
+                fail();
+                return {};
+            }
         }
         return s;
     }
-    bool ok() const { return is.good() || is.eof(); }
+    bool ok() const { return !is.fail(); }
 };
 
 void writeReflectedStructMember(Writer& w, const vne::sc::ReflectedStructMember& m) {
@@ -95,16 +136,29 @@ void writeReflectedStructMember(Writer& w, const vne::sc::ReflectedStructMember&
     w.str(m.type_name);
 }
 
-void readReflectedStructMember(Reader& r, vne::sc::ReflectedStructMember& m) {
+bool readReflectedStructMember(Reader& r, vne::sc::ReflectedStructMember& m) {
+    if (!r.ok()) {
+        return false;
+    }
     m.name = r.str();
+    if (!r.ok()) {
+        return false;
+    }
     m.offset = r.u32();
     m.size = r.u32();
     m.array_count = r.u32();
     m.array_stride = r.u32();
+    if (!r.ok()) {
+        return false;
+    }
     m.is_matrix = r.boolean();
     m.matrix_columns = r.u32();
     m.matrix_rows = r.u32();
+    if (!r.ok()) {
+        return false;
+    }
     m.type_name = r.str();
+    return r.ok();
 }
 
 void writeBackendSlot(Writer& w, const vne::sc::BackendSlot& s) {
@@ -116,13 +170,20 @@ void writeBackendSlot(Writer& w, const vne::sc::BackendSlot& s) {
     w.boolean(s.populated);
 }
 
-void readBackendSlot(Reader& r, vne::sc::BackendSlot& s) {
+bool readBackendSlot(Reader& r, vne::sc::BackendSlot& s) {
+    if (!r.ok()) {
+        return false;
+    }
     s.metal_buffer_index = r.u32();
     s.metal_texture_index = r.u32();
     s.metal_sampler_index = r.u32();
     s.wgpu_group = r.u32();
     s.wgpu_binding = r.u32();
+    if (!r.ok()) {
+        return false;
+    }
     s.populated = r.boolean();
+    return r.ok();
 }
 
 void writeReflectedBindingInfo(Writer& w, const vne::sc::ReflectedBindingInfo& b) {
@@ -139,19 +200,33 @@ void writeReflectedBindingInfo(Writer& w, const vne::sc::ReflectedBindingInfo& b
     }
 }
 
-void readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
+bool readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
+    if (!r.ok()) {
+        return false;
+    }
     b.name = r.str();
+    if (!r.ok()) {
+        return false;
+    }
     b.type = static_cast<vne::sc::ReflectedResourceType>(r.u8());
     b.set = r.u32();
     b.binding = r.u32();
     b.array_size = r.u32();
     b.stages = static_cast<vne::sc::ShaderStageFlags>(r.u32());
-    readBackendSlot(r, b.backend_slot);
+    if (!r.ok() || !readBackendSlot(r, b.backend_slot)) {
+        return false;
+    }
     const uint32_t member_count = r.bounded_count(kMaxStructMemberCount);
+    if (!r.ok()) {
+        return false;
+    }
     b.struct_members.resize(member_count);
     for (auto& m : b.struct_members) {
-        readReflectedStructMember(r, m);
+        if (!readReflectedStructMember(r, m)) {
+            return false;
+        }
     }
+    return r.ok();
 }
 
 void writeStageReflection(Writer& w, const vne::sc::StageReflection& sr) {
@@ -166,17 +241,26 @@ void writeStageReflection(Writer& w, const vne::sc::StageReflection& sr) {
     w.u32(sr.workgroup_size.z);
 }
 
-void readStageReflection(Reader& r, vne::sc::StageReflection& sr) {
+bool readStageReflection(Reader& r, vne::sc::StageReflection& sr) {
+    if (!r.ok()) {
+        return false;
+    }
     sr.stage = static_cast<vne::sc::ShaderStage>(r.u8());
     const uint32_t binding_count = r.bounded_count(kMaxBindingCount);
+    if (!r.ok()) {
+        return false;
+    }
     sr.bindings.resize(binding_count);
     for (auto& b : sr.bindings) {
-        readReflectedBindingInfo(r, b);
+        if (!readReflectedBindingInfo(r, b)) {
+            return false;
+        }
     }
     sr.push_constant_size = r.u32();
     sr.workgroup_size.x = r.u32();
     sr.workgroup_size.y = r.u32();
     sr.workgroup_size.z = r.u32();
+    return r.ok();
 }
 
 }  // namespace
@@ -190,13 +274,11 @@ std::string serializeStageReflection(const StageReflection& reflection) {
 }
 
 bool deserializeStageReflection(const std::string& data, StageReflection& out) {
-    try {
-        Reader r(data);
-        readStageReflection(r, out);
-        return r.ok();
-    } catch (...) {
+    Reader r(data);
+    if (!readStageReflection(r, out)) {
         return false;
     }
+    return r.ok();
 }
 
 std::string serializeProgramReflection(const ProgramReflection& reflection) {
@@ -209,17 +291,18 @@ std::string serializeProgramReflection(const ProgramReflection& reflection) {
 }
 
 bool deserializeProgramReflection(const std::string& data, ProgramReflection& out) {
-    try {
-        Reader r(data);
-        const uint32_t count = r.bounded_count(kMaxProgramStageCount);
-        out.stages.resize(count);
-        for (auto& stage : out.stages) {
-            readStageReflection(r, stage);
-        }
-        return r.ok();
-    } catch (...) {
+    Reader r(data);
+    const uint32_t count = r.bounded_count(kMaxProgramStageCount);
+    if (!r.ok()) {
         return false;
     }
+    out.stages.resize(count);
+    for (auto& stage : out.stages) {
+        if (!readStageReflection(r, stage)) {
+            return false;
+        }
+    }
+    return r.ok();
 }
 
 }  // namespace vne::sc
