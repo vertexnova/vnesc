@@ -206,6 +206,59 @@ if(VNE_SC_SPIRVTOOLS)
     message(STATUS "vnesc: SPIRV-Tools (${_vne_sc_spirvtools_origin})")
 endif()
 
+# ══════════════════════════════════════════════════════════════════════════════
+# nlohmann/json (offline manifests / bundle manifest.json)
+# ══════════════════════════════════════════════════════════════════════════════
+if(VNE_SC_JSON)
+    FetchContent_Declare(nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG        v3.11.3
+        GIT_SHALLOW    TRUE)
+    set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(nlohmann_json)
+    message(STATUS "vnesc: nlohmann/json (FetchContent)")
+endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Dawn / Tint (SPIR-V → WGSL, when VNE_SC_TINT=ON)
+# ══════════════════════════════════════════════════════════════════════════════
+if(VNE_SC_TINT)
+    set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "" FORCE)
+    set(DAWN_USE_GLFW OFF CACHE BOOL "" FORCE)
+    set(DAWN_USE_X11 OFF CACHE BOOL "" FORCE)
+    set(DAWN_USE_WAYLAND OFF CACHE BOOL "" FORCE)
+    set(TINT_BUILD_SPV_READER ON CACHE BOOL "" FORCE)
+    set(TINT_BUILD_WGSL_WRITER ON CACHE BOOL "" FORCE)
+    set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(TINT_BUILD_CMD_TOOLS OFF CACHE BOOL "" FORCE)
+    set(TINT_BUILD_IR_BINARY OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(dawn
+        GIT_REPOSITORY https://dawn.googlesource.com/dawn
+        GIT_TAG        chromium/6723
+        GIT_SHALLOW    TRUE)
+    FetchContent_MakeAvailable(dawn)
+    message(STATUS "vnesc: Dawn/Tint (FetchContent chromium/6723)")
+endif()
+
+function(vne_sc_link_tint target)
+    if(NOT VNE_SC_TINT)
+        return()
+    endif()
+    if(TARGET libtint)
+        target_link_libraries(${target} PRIVATE libtint)
+    elseif(TARGET tint)
+        target_link_libraries(${target} PRIVATE tint)
+    else()
+        message(FATAL_ERROR "vne_sc_link_tint: no libtint or tint target from Dawn")
+    endif()
+    target_compile_definitions(${target} PRIVATE VNE_SC_TINT_ENABLED)
+endfunction()
+
 # Restore PIC
 if(DEFINED _vne_sc_prev_pic AND NOT _vne_sc_prev_pic STREQUAL "")
     set(CMAKE_POSITION_INDEPENDENT_CODE "${_vne_sc_prev_pic}")

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "sc_types.h"
+
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -78,7 +80,7 @@ struct ValidationResult {
 /// Result of a SPIR-V reflection pass.
 struct ReflectResult {
     ResultCode code = ResultCode::eReflectionFailed;
-    std::string json;  ///< Serialised stage reflection as JSON; empty on failure.
+    StageReflection reflection;  ///< Populated binding and push-constant data; valid only when @c ok().
     std::string error;
 
     bool ok() const noexcept { return succeeded(code); }

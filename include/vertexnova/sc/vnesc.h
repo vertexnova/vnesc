@@ -20,3 +20,6 @@
 #include "shader_artifact_cache.h"
 #include "shader_pipeline_builder.h"
 #include "shader_compiler_factory.h"
+#include "shader_reflection_binary.h"
+#include "shader_bundle.h"
+#include "pipeline_build_manifest.h"

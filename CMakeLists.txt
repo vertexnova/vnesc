@@ -178,6 +178,8 @@ option(VNE_SC_GLSLANG    "Enable glslang GLSL→SPIR-V front-end (Phase 1, prima
 option(VNE_SC_DXC        "Enable DXC HLSL→SPIR-V front-end (Phase 2 — stub only)" OFF)
 option(VNE_SC_SLANG      "Enable Slang front-end (Phase 3 — stub only)" OFF)
 option(VNE_SC_SPIRVTOOLS "Enable SPIRV-Tools SPIR-V validator (OFF = no-op validator)" OFF)
+option(VNE_SC_TINT       "Enable Dawn Tint SPIR-V→WGSL cross-compiler (slow first configure)" OFF)
+option(VNE_SC_JSON       "Enable nlohmann/json for manifests and bundle metadata" ON)
 
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
@@ -326,6 +328,9 @@ include(GNUInstallDirs)
 set(_vnesc_install_targets vnesc vnesc_interface vnesc_spirvcross vnesc_validator VnescWarnings VnescBuildSettings)
 if(VNE_SC_GLSLANG AND TARGET vnesc_glslang)
     list(APPEND _vnesc_install_targets vnesc_glslang)
+endif()
+if(VNE_SC_TINT AND TARGET vnesc_tint)
+    list(APPEND _vnesc_install_targets vnesc_tint)
 endif()
 install(TARGETS ${_vnesc_install_targets}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

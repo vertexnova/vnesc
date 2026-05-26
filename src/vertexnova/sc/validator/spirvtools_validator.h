@@ -1,15 +1,14 @@
-/**
- * @file spirvtools_validator.h
- * @brief SPIRV-Tools based SPIR-V validator.
- *
- * Only compiled when @c VNE_SC_SPIRVTOOLS_ENABLED is defined.
- * When the SPIRV-Tools library is absent, the build substitutes @ref NoopValidator.
- *
- * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
- * Licensed under the Apache License, Version 2.0 (the "License").
- */
-
 #pragma once
+/* ---------------------------------------------------------------------
+ * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
+ * Autodoc:   yes
+ * ----------------------------------------------------------------------
+ */
 
 #include "vertexnova/sc/shader_validator.h"
 

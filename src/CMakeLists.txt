@@ -18,7 +18,8 @@ target_include_directories(vnesc_interface INTERFACE
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(vnesc_interface INTERFACE
     vne::sc::Warnings
-    vne::sc::BuildSettings)
+    vne::sc::BuildSettings
+    vne::logging)
 target_compile_features(vnesc_interface INTERFACE cxx_std_20)
 add_library(vne::sc::interface ALIAS vnesc_interface)
 
@@ -62,11 +63,26 @@ target_include_directories(vnesc_validator PRIVATE ${PROJECT_SOURCE_DIR}/src)
 set_target_properties(vnesc_validator PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_library(vne::sc::validator ALIAS vnesc_validator)
 
-# ── Core library (cache, factory, pipeline builder) ───────────────────────────
+# ── Tint WGSL cross-compiler (optional) ───────────────────────────────────────
+if(VNE_SC_TINT)
+    add_library(vnesc_tint STATIC
+        vertexnova/sc/crosscompiler/tint_cross_compiler.cpp)
+    target_include_directories(vnesc_tint PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    vne_sc_link_tint(vnesc_tint)
+    target_link_libraries(vnesc_tint PUBLIC vnesc_interface)
+    set_target_properties(vnesc_tint PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+    add_library(vne::sc::tint ALIAS vnesc_tint)
+endif()
+
+# ── Core library (cache, factory, pipeline builder, bundle) ─────────────────
 add_library(vnesc STATIC
     vertexnova/sc/shader_artifact_cache.cpp
+    vertexnova/sc/shader_reflection_binary.cpp
+    vertexnova/sc/shader_bundle.cpp
+    vertexnova/sc/pipeline_build_manifest.cpp
     vertexnova/sc/shader_compiler_factory.cpp
-    vertexnova/sc/shader_pipeline_builder.cpp)
+    vertexnova/sc/shader_pipeline_builder.cpp
+    vertexnova/sc/crosscompiler/dispatch_cross_compiler.cpp)
 target_include_directories(vnesc PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(vnesc PUBLIC
     vnesc_interface
@@ -75,6 +91,14 @@ target_link_libraries(vnesc PUBLIC
 if(VNE_SC_GLSLANG)
     target_link_libraries(vnesc PRIVATE vnesc_glslang)
     target_compile_definitions(vnesc PUBLIC VNE_SC_GLSLANG_ENABLED)
+endif()
+if(VNE_SC_TINT)
+    target_link_libraries(vnesc PRIVATE vnesc_tint)
+    target_compile_definitions(vnesc PUBLIC VNE_SC_TINT_ENABLED)
+endif()
+if(VNE_SC_JSON)
+    target_link_libraries(vnesc PUBLIC nlohmann_json::nlohmann_json)
+    target_compile_definitions(vnesc PUBLIC VNE_SC_JSON_ENABLED)
 endif()
 set_target_properties(vnesc PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_library(vne::sc ALIAS vnesc)

@@ -3,8 +3,8 @@
  * @brief Output types produced by the shader compilation pipeline.
  *
  * A @ref ShaderArtifact bundles every compiler output for a complete shader
- * program: SPIR-V binaries, cross-compiled source texts, and reflection JSON
- * for each pipeline stage.
+ * program: SPIR-V binaries, cross-compiled source texts, and typed binding
+ * reflection data for each pipeline stage.
  *
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -35,7 +35,7 @@ struct StageArtifact {
     ShaderStage stage;
     std::string entry_point;
     std::vector<uint32_t> spirv;                      ///< SPIR-V binary words.
-    std::string reflection_json;                      ///< Serialised stage reflection.
+    StageReflection reflection;                       ///< Typed binding and push-constant metadata.
     std::vector<CrossCompiledSource> cross_compiled;  ///< One entry per requested target.
 
     /**
@@ -71,6 +71,21 @@ struct ShaderArtifact {
             }
         }
         return nullptr;
+    }
+
+    /**
+     * @brief Assembles a @ref ProgramReflection from the per-stage reflection data.
+     *
+     * The returned object owns its own copy of the data and can be passed to
+     * the engine's shader loader without keeping the artifact alive.
+     */
+    ProgramReflection assembleReflection() const noexcept {
+        ProgramReflection pr;
+        pr.stages.reserve(stages.size());
+        for (const auto& s : stages) {
+            pr.stages.push_back(s.reflection);
+        }
+        return pr;
     }
 
     /**

@@ -4,6 +4,8 @@
  *
  * Author:    Ajeet Singh Yadav
  * Created:   May 2026
+ *
+ * Autodoc:   yes
  * ----------------------------------------------------------------------
  */
 
@@ -18,6 +20,8 @@
 #include "frontend/dxc_frontend.h"
 #include "frontend/slang_frontend.h"
 #include "crosscompiler/spirvcross_cross_compiler.h"
+#include "crosscompiler/tint_cross_compiler.h"
+#include "crosscompiler/dispatch_cross_compiler.h"
 #include "reflector/spirvcross_reflector.h"
 
 #ifdef VNE_SC_SPIRVTOOLS_ENABLED
@@ -43,8 +47,21 @@ std::shared_ptr<IShaderFrontEnd> ShaderCompilerFactory::createFrontEnd(SourceLan
     }
 }
 
-std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createCrossCompiler() {
+std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createSpirvCrossCrossCompiler() {
     return std::make_shared<SpirvCrossCrossCompiler>();
+}
+
+std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createTintCrossCompiler() {
+#ifdef VNE_SC_TINT_ENABLED
+    return std::make_shared<TintCrossCompiler>();
+#else
+    return nullptr;
+#endif
+}
+
+std::shared_ptr<IShaderCrossCompiler> ShaderCompilerFactory::createCrossCompiler() {
+    return std::make_shared<DispatchCrossCompiler>(createSpirvCrossCrossCompiler(),
+                                                     createTintCrossCompiler());
 }
 
 std::shared_ptr<IShaderReflector> ShaderCompilerFactory::createReflector() {

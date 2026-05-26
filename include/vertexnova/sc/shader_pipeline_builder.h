@@ -62,7 +62,7 @@ struct PipelineBuildResult {
  *  -# Cache lookup — return early on hit.
  *  -# @ref IShaderFrontEnd::compile      — source → SPIR-V.
  *  -# @ref IShaderValidator::validate    — optional SPIR-V validation.
- *  -# @ref IShaderReflector::reflectToJson — SPIR-V → JSON binding description.
+ *  -# @ref IShaderReflector::reflect — SPIR-V → typed @ref StageReflection.
  *  -# @ref IShaderCrossCompiler::crossCompile — SPIR-V → target source (one per target).
  *  -# Cache store.
  */
