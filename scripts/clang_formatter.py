@@ -174,7 +174,7 @@ def main():
         else:
             folder_arg = args.folder_positional
         if folder_arg.lower() in ("all", "ci"):
-            ci_dirs = ("src", "include", "samples", "tests")
+            ci_dirs = ("src", "include", "examples", "tools", "tests")
             source_files = []
             for d in ci_dirs:
                 p = project_root / d

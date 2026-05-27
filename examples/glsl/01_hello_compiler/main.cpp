@@ -65,8 +65,7 @@ int main() {
         }
     }
 
-    const std::filesystem::path bundle_dir =
-        std::filesystem::temp_directory_path() / "hello_compiler_bundle";
+    const std::filesystem::path bundle_dir = std::filesystem::temp_directory_path() / "hello_compiler_bundle";
     if (!vne::sc::writeShaderBundle(result.artifact, bundle_dir)) {
         std::cerr << "Failed to write bundle to " << bundle_dir << "\n";
         return 1;
