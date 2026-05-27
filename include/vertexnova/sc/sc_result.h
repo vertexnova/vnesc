@@ -59,12 +59,21 @@ struct CompileResult {
     bool ok() const noexcept { return succeeded(code); }
 };
 
+/// Actual WebGPU `@group`/`@binding` assignment for a named resource in the emitted WGSL.
+struct WgpuBindingRemap {
+    std::string name;      ///< Resource variable name as it appears in WGSL.
+    uint32_t group = 0;    ///< Actual `@group(N)` in the emitted WGSL.
+    uint32_t binding = 0;  ///< Actual `@binding(N)` in the emitted WGSL.
+};
+
 /// Result of a SPIR-V → shading-language cross-compilation.
 struct CrossCompileResult {
     ResultCode code = ResultCode::eCrossCompileFailed;
     std::string source;       ///< Cross-compiled source text (MSL, GLSL, …).
     std::string entry_point;  ///< Actual entry-point name in the output source.
     std::string error;
+    /// For WGSL targets: actual @group/@binding in emitted WGSL (may differ from SPIR-V set/binding).
+    std::vector<WgpuBindingRemap> wgpu_binding_remap;
 
     bool ok() const noexcept { return succeeded(code); }
 };

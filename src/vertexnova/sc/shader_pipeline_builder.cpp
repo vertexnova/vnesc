@@ -133,6 +133,18 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
 
                 CrossCompileResult ccres = cross_compiler_->crossCompile(ccr);
                 if (ccres.ok()) {
+                    // Apply WGSL binding remap to reflection so BackendSlot matches emitted WGSL.
+                    if (target == CrossTarget::eWGSL && !ccres.wgpu_binding_remap.empty()) {
+                        for (auto& binding : stage_artifact.reflection.bindings) {
+                            for (const auto& remap : ccres.wgpu_binding_remap) {
+                                if (binding.name == remap.name) {
+                                    binding.backend_slot.wgpu_group   = remap.group;
+                                    binding.backend_slot.wgpu_binding = remap.binding;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     CrossCompiledSource cc;
                     cc.target = target;
                     cc.source = std::move(ccres.source);

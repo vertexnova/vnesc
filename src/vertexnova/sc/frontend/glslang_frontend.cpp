@@ -5,6 +5,8 @@
 
 #include "glslang_frontend.h"
 
+#include "vertexnova/logging/logging.h"
+
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/Public/ResourceLimits.h>
 #include <SPIRV/GlslangToSpv.h>
@@ -13,6 +15,8 @@
 #include <mutex>
 #include <sstream>
 #include <filesystem>
+
+CREATE_VNE_LOGGER_CATEGORY("vne.sc.glslang")
 
 namespace {
 
@@ -171,6 +175,11 @@ namespace vne::sc {
 
 GlslangFrontEnd::GlslangFrontEnd() {
     initialized_ = glslangProcessLifetime().acquire();
+    if (!initialized_) {
+        VNE_LOG_ERROR << "GlslangFrontEnd: glslang::InitializeProcess() failed";
+    } else {
+        VNE_LOG_DEBUG << "GlslangFrontEnd: initialized";
+    }
 }
 
 GlslangFrontEnd::~GlslangFrontEnd() {
@@ -190,6 +199,7 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     if (!initialized_) {
         result.errors.push_back("GlslangFrontEnd: glslang initialisation failed");
         result.code = ResultCode::eUnavailable;
+        VNE_LOG_ERROR << "GlslangFrontEnd: not initialized";
         return result;
     }
 
@@ -265,6 +275,7 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
 
     if (!parsed) {
         result.code = ResultCode::eCompileFailed;
+        VNE_LOG_ERROR << "GlslangFrontEnd: parse failed for " << source_path;
         return result;
     }
 
@@ -300,6 +311,7 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     }
 
     result.code = result.warnings.empty() ? ResultCode::eSuccess : ResultCode::eCompileWarnings;
+    VNE_LOG_DEBUG << "GlslangFrontEnd: compiled " << source_path << " → " << result.spirv.size() << " SPIR-V words";
     return result;
 }
 

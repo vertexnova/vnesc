@@ -13,10 +13,13 @@
 #include "spirv_glsl.hpp"
 #include "spirv_msl.hpp"
 
+#include "vertexnova/logging/logging.h"
+
 #include <regex>
 #include <sstream>
 #include <unordered_map>
-#include <unordered_set>
+
+CREATE_VNE_LOGGER_CATEGORY("vne.sc.crosscompiler")
 
 namespace {
 
@@ -168,6 +171,7 @@ CrossCompileResult SpirvCrossCrossCompiler::crossCompile(const CrossCompileReque
         CrossCompileResult r;
         r.code = ResultCode::eCrossCompileFailed;
         r.error = "SpirvCrossCrossCompiler: empty SPIR-V";
+        VNE_LOG_ERROR << r.error;
         return r;
     }
     switch (req.target) {
@@ -217,48 +221,27 @@ CrossCompileResult SpirvCrossCrossCompiler::toMSL(const CrossCompileRequest& req
         }
 
         // ── Resource binding remapping ─────────────────────────────────────────
+        // Note: do NOT call build_combined_image_samplers() for MSL. CompilerMSL
+        // handles OpSampledImage (from separate texture2D + sampler) natively.
+        // Calling it creates synthetic combined variables that conflict with the
+        // original separate resources, producing duplicate [[texture(N)]] slots.
         auto resources = compiler.get_shader_resources();
-        compiler.build_combined_image_samplers();
-        auto combined = compiler.get_combined_image_samplers();
 
-        std::unordered_set<spirv_cross::VariableID> comb_img_ids, comb_smp_ids;
-        for (const auto& c : combined) {
-            comb_img_ids.insert(c.image_id);
-            comb_smp_ids.insert(c.sampler_id);
-        }
-
-        // Combined image samplers
-        for (const auto& c : combined) {
-            uint32_t set = compiler.has_decoration(c.image_id, spv::DecorationDescriptorSet)
-                               ? compiler.get_decoration(c.image_id, spv::DecorationDescriptorSet)
+        // Combined image samplers (sampler2D uniforms in Vulkan GLSL → sampled_images in SPIR-V)
+        for (const auto& r : resources.sampled_images) {
+            uint32_t set = compiler.has_decoration(r.id, spv::DecorationDescriptorSet)
+                               ? compiler.get_decoration(r.id, spv::DecorationDescriptorSet)
                                : 0;
-            uint32_t binding = compiler.has_decoration(c.image_id, spv::DecorationBinding)
-                                   ? compiler.get_decoration(c.image_id, spv::DecorationBinding)
+            uint32_t binding = compiler.has_decoration(r.id, spv::DecorationBinding)
+                                   ? compiler.get_decoration(r.id, spv::DecorationBinding)
                                    : 0;
-            uint32_t tex_idx = metalTextureSlot(set, binding);
-            uint32_t smp_idx = metalSamplerSlot(set, binding);
-
             spirv_cross::MSLResourceBinding mb{};
             mb.stage = exec_model;
             mb.desc_set = set;
             mb.binding = binding;
-            mb.msl_texture = tex_idx;
-            mb.msl_sampler = smp_idx;
+            mb.msl_texture = metalTextureSlot(set, binding);
+            mb.msl_sampler = metalSamplerSlot(set, binding);
             compiler.add_msl_resource_binding(mb);
-
-            // Also remap the sampler resource separately
-            uint32_t sset = compiler.has_decoration(c.sampler_id, spv::DecorationDescriptorSet)
-                                ? compiler.get_decoration(c.sampler_id, spv::DecorationDescriptorSet)
-                                : set;
-            uint32_t sbind = compiler.has_decoration(c.sampler_id, spv::DecorationBinding)
-                                 ? compiler.get_decoration(c.sampler_id, spv::DecorationBinding)
-                                 : binding;
-            spirv_cross::MSLResourceBinding smb{};
-            smb.stage = exec_model;
-            smb.desc_set = sset;
-            smb.binding = sbind;
-            smb.msl_sampler = smp_idx;
-            compiler.add_msl_resource_binding(smb);
         }
 
         // Uniform buffers
@@ -295,8 +278,6 @@ CrossCompileResult SpirvCrossCrossCompiler::toMSL(const CrossCompileRequest& req
 
         // Separate images
         for (const auto& r : resources.separate_images) {
-            if (comb_img_ids.count(r.id))
-                continue;
             uint32_t set = compiler.has_decoration(r.id, spv::DecorationDescriptorSet)
                                ? compiler.get_decoration(r.id, spv::DecorationDescriptorSet)
                                : 0;
@@ -313,8 +294,6 @@ CrossCompileResult SpirvCrossCrossCompiler::toMSL(const CrossCompileRequest& req
 
         // Separate samplers
         for (const auto& r : resources.separate_samplers) {
-            if (comb_smp_ids.count(r.id))
-                continue;
             uint32_t set = compiler.has_decoration(r.id, spv::DecorationDescriptorSet)
                                ? compiler.get_decoration(r.id, spv::DecorationDescriptorSet)
                                : 0;
@@ -373,11 +352,14 @@ CrossCompileResult SpirvCrossCrossCompiler::toMSL(const CrossCompileRequest& req
         }
 
         result.code = ResultCode::eSuccess;
+        VNE_LOG_DEBUG << "SpirvCrossCrossCompiler: MSL compiled, entry=" << result.entry_point
+                      << " (" << result.source.size() << " bytes)";
         return result;
 
     } catch (const std::exception& e) {
         result.code = ResultCode::eCrossCompileFailed;
         result.error = std::string("SpirvCrossCrossCompiler MSL: ") + e.what();
+        VNE_LOG_ERROR << result.error;
         return result;
     }
 }
@@ -414,11 +396,14 @@ CrossCompileResult SpirvCrossCrossCompiler::toGLSL(const CrossCompileRequest& re
         result.source = compiler.compile();
         result.entry_point = "main";
         result.code = ResultCode::eSuccess;
+        VNE_LOG_DEBUG << "SpirvCrossCrossCompiler: GLSL" << (es ? " ES" : "") << " compiled ("
+                      << result.source.size() << " bytes)";
         return result;
 
     } catch (const std::exception& e) {
         result.code = ResultCode::eCrossCompileFailed;
         result.error = std::string("SpirvCrossCrossCompiler GLSL: ") + e.what();
+        VNE_LOG_ERROR << result.error;
         return result;
     }
 }
@@ -426,13 +411,10 @@ CrossCompileResult SpirvCrossCrossCompiler::toGLSL(const CrossCompileRequest& re
 // ── WGSL ─────────────────────────────────────────────────────────────────────
 CrossCompileResult SpirvCrossCrossCompiler::toWGSL(const CrossCompileRequest& req) {
     CrossCompileResult result;
-    // SPIRV-Cross does not have a WGSL backend; SPIR-V set/binding decorations
-    // are preserved verbatim and naga/tint (external tools) perform the conversion.
-    // For vnesc's purpose we return the SPIR-V as a placeholder and note that the
-    // caller should use naga/tint for WGSL output.
     (void)req;
     result.code = ResultCode::eUnavailable;
-    result.error = "SpirvCrossCrossCompiler: WGSL output requires naga or tint (not yet integrated)";
+    result.error = "SpirvCrossCrossCompiler: WGSL requires Tint (use DispatchCrossCompiler or build with -DVNE_SC_TINT=ON)";
+    VNE_LOG_WARN << result.error;
     return result;
 }
 

@@ -6,6 +6,10 @@
 
 #include "dispatch_cross_compiler.h"
 
+#include "vertexnova/logging/logging.h"
+
+CREATE_VNE_LOGGER_CATEGORY("vne.sc.crosscompiler")
+
 namespace vne::sc {
 
 DispatchCrossCompiler::DispatchCrossCompiler(std::shared_ptr<IShaderCrossCompiler> spirv_cross,
@@ -23,16 +27,20 @@ CrossCompileResult DispatchCrossCompiler::crossCompile(const CrossCompileRequest
             CrossCompileResult result;
             result.code = ResultCode::eUnavailable;
             result.error = "DispatchCrossCompiler: WGSL requires Tint (build with -DVNE_SC_TINT=ON)";
+            VNE_LOG_ERROR << result.error;
             return result;
         }
+        VNE_LOG_DEBUG << "DispatchCrossCompiler: routing WGSL to Tint";
         return tint_->crossCompile(req);
     }
     if (!spirv_cross_) {
         CrossCompileResult result;
         result.code = ResultCode::eUnavailable;
         result.error = "DispatchCrossCompiler: SPIRV-Cross backend not available";
+        VNE_LOG_ERROR << result.error;
         return result;
     }
+    VNE_LOG_DEBUG << "DispatchCrossCompiler: routing target " << static_cast<int>(req.target) << " to SPIRV-Cross";
     return spirv_cross_->crossCompile(req);
 }
 

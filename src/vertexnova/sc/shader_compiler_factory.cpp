@@ -16,6 +16,10 @@
 #include "vertexnova/sc/shader_reflector.h"
 #include "vertexnova/sc/shader_validator.h"
 
+#include "vertexnova/logging/logging.h"
+
+CREATE_VNE_LOGGER_CATEGORY("vne.sc.factory")
+
 #include "frontend/glslang_frontend.h"
 #include "frontend/dxc_frontend.h"
 #include "frontend/slang_frontend.h"
@@ -78,8 +82,11 @@ std::shared_ptr<IShaderValidator> ShaderCompilerFactory::createValidator() {
 std::shared_ptr<IShaderPipelineBuilder> ShaderCompilerFactory::createPipelineBuilder(SourceLang lang) {
     auto frontend = createFrontEnd(lang);
     if (!frontend) {
+        VNE_LOG_ERROR << "ShaderCompilerFactory: no front-end available for source lang "
+                      << static_cast<int>(lang);
         return nullptr;
     }
+    VNE_LOG_DEBUG << "ShaderCompilerFactory: created pipeline builder for lang " << static_cast<int>(lang);
     return std::make_shared<ShaderPipelineBuilder>(frontend,
                                                    createCrossCompiler(),
                                                    createReflector(),

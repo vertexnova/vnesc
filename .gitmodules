@@ -1,27 +1,9 @@
 [submodule "cmake/vnecmake"]
 	path = cmake/vnecmake
 	url = https://github.com/vertexnova/vnecmake.git
-[submodule "deps/external/googletest"]
-	path = deps/external/googletest
-	url = https://github.com/google/googletest.git
 [submodule "deps/internal/vnecommon"]
 	path = deps/internal/vnecommon
 	url = https://github.com/vertexnova/vnecommon.git
 [submodule "deps/internal/vnelogging"]
 	path = deps/internal/vnelogging
 	url = https://github.com/vertexnova/vnelogging.git
-[submodule "deps/external/SPIRV-Cross"]
-	path = deps/external/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross.git
-[submodule "deps/external/glslang"]
-	path = deps/external/glslang
-	url = https://github.com/KhronosGroup/glslang.git
-[submodule "deps/external/SPIRV-Headers"]
-	path = deps/external/SPIRV-Headers
-	url = https://github.com/KhronosGroup/SPIRV-Headers.git
-[submodule "deps/external/SPIRV-Tools"]
-	path = deps/external/SPIRV-Tools
-	url = https://github.com/KhronosGroup/SPIRV-Tools.git
-[submodule "deps/external/nlohmann_json"]
-	path = deps/external/nlohmann_json
-	url = https://github.com/nlohmann/json.git

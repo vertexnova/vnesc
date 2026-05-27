@@ -42,7 +42,7 @@ endif()
 if(NOT TARGET spirv-cross-core)
     message(FATAL_ERROR
         "vnesc_spirvcross requires SPIRV-Cross (target spirv-cross-core). "
-        "Provide deps/external/SPIRV-Cross or allow FetchContent in cmake/VnescDeps.cmake.")
+        "Set VNE_SC_SPIRV_CROSS_DIR or allow FetchContent in cmake/Dependencies.cmake.")
 endif()
 add_library(vnesc_spirvcross STATIC
     vertexnova/sc/crosscompiler/spirvcross_cross_compiler.cpp
@@ -84,7 +84,7 @@ add_library(vnesc STATIC
     vertexnova/sc/shader_artifact_cache.cpp
     vertexnova/sc/shader_reflection_binary.cpp
     vertexnova/sc/shader_bundle.cpp
-    vertexnova/sc/pipeline_build_manifest.cpp
+    vertexnova/sc/shader_pipeline_spec.cpp
     vertexnova/sc/shader_compiler_factory.cpp
     vertexnova/sc/shader_pipeline_builder.cpp
     vertexnova/sc/crosscompiler/dispatch_cross_compiler.cpp)
