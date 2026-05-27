@@ -27,9 +27,9 @@ TEST_F(ShaderCrossCompilerTest, VertexToMslProducesNonEmptySource) {
     auto cc = ShaderCompilerFactory::createCrossCompiler();
     ASSERT_NE(cc, nullptr);
     CrossCompileRequest ccr;
-    ccr.spirv  = cr.spirv;
+    ccr.spirv = cr.spirv;
     ccr.target = CrossTarget::eMSL;
-    ccr.stage  = ShaderStage::eVertex;
+    ccr.stage = ShaderStage::eVertex;
 
     auto ccres = cc->crossCompile(ccr);
     EXPECT_TRUE(ccres.ok()) << ccres.error;
@@ -42,9 +42,9 @@ TEST_F(ShaderCrossCompilerTest, WgslReturnsUnavailableWithoutTint) {
     auto cc = ShaderCompilerFactory::createCrossCompiler();
     ASSERT_NE(cc, nullptr);
     CrossCompileRequest ccr;
-    ccr.spirv  = {0x07230203u};
+    ccr.spirv = {0x07230203u};
     ccr.target = CrossTarget::eWGSL;
-    ccr.stage  = ShaderStage::eVertex;
+    ccr.stage = ShaderStage::eVertex;
 
     auto ccres = cc->crossCompile(ccr);
     EXPECT_FALSE(ccres.ok());

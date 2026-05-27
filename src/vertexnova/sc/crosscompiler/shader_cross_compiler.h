@@ -22,7 +22,9 @@
 namespace vne::sc {
 
 class SpirvCrossCrossCompiler;
+#ifdef VNE_SC_TINT_ENABLED
 class TintCrossCompiler;
+#endif
 
 /**
  * @brief Routes SPIR-V cross-compilation to the appropriate backend.
@@ -45,7 +47,9 @@ class ShaderCrossCompiler final : public IShaderCrossCompiler {
 
    private:
     std::unique_ptr<SpirvCrossCrossCompiler> spirvcross_;
-    std::unique_ptr<TintCrossCompiler>       tint_;  ///< nullptr when VNE_SC_TINT not built
+#ifdef VNE_SC_TINT_ENABLED
+    std::unique_ptr<TintCrossCompiler> tint_;
+#endif
 };
 
 }  // namespace vne::sc

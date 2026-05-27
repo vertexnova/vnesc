@@ -11,7 +11,9 @@
 
 #include "shader_cross_compiler.h"
 #include "spirvcross_cross_compiler.h"
+#ifdef VNE_SC_TINT_ENABLED
 #include "tint_cross_compiler.h"
+#endif
 
 #include "vertexnova/logging/logging.h"
 
@@ -24,7 +26,8 @@ ShaderCrossCompiler::ShaderCrossCompiler()
 #ifdef VNE_SC_TINT_ENABLED
     , tint_(std::make_unique<TintCrossCompiler>())
 #endif
-{}
+{
+}
 
 ShaderCrossCompiler::~ShaderCrossCompiler() = default;
 
@@ -34,10 +37,12 @@ bool ShaderCrossCompiler::isAvailable() const noexcept {
 
 CrossCompileResult ShaderCrossCompiler::crossCompile(const CrossCompileRequest& req) {
     if (req.target == CrossTarget::eWGSL) {
+#ifdef VNE_SC_TINT_ENABLED
         if (tint_ && tint_->isAvailable()) {
             VNE_LOG_DEBUG << "ShaderCrossCompiler: routing WGSL to Tint";
             return tint_->crossCompile(req);
         }
+#endif
         VNE_LOG_DEBUG << "ShaderCrossCompiler: Tint not available, routing WGSL to SPIRV-Cross";
         return spirvcross_->crossCompile(req);
     }
