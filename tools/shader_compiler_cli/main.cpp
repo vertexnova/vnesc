@@ -8,7 +8,7 @@
  *   vnesc_shader_compiler --manifest <path> --output <bundle_dir> [--cache <dir>]
  *
  * Reads:  <path> — JSON file parseable by ShaderPipelineSpec
- * Writes: <bundle_dir>.vneshader/ directory
+ * Writes: <bundle_dir>/ directory
  * ----------------------------------------------------------------------
  */
 
@@ -27,7 +27,7 @@ void printUsage(const char* argv0) {
     std::cerr << "Usage: " << argv0 << " --manifest <path> --output <bundle_dir> [--cache <dir>]\n"
               << "\n"
               << "  --manifest <path>    JSON manifest describing the pipeline build job\n"
-              << "  --output  <dir>      Output .vneshader bundle directory\n"
+              << "  --output  <dir>      Output bundle directory\n"
               << "  --cache   <dir>      Optional shader artifact cache directory\n";
 }
 
