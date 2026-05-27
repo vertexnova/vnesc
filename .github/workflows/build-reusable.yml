@@ -56,10 +56,10 @@ on:
         type: string
         default: ""
       lib_type:
-        description: "Library type: 'static' or 'shared' (one per build). Default shared."
+        description: "Library type: 'static' or 'shared' (one per build). Default static."
         required: false
         type: string
-        default: ""
+        default: "static"
     secrets:
       codecov_token:
         description: "Codecov upload token (required when enable_coverage is true)"
@@ -78,8 +78,8 @@ jobs:
       - name: Use HTTPS for GitHub (CI runners have no SSH key)
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-      # Submodules are fetched here; we do not cache them (a cache restored
-      # after checkout would not reduce fetch cost). We rely on the build cache only.
+      # Submodule checkout: cmake/vnecmake (required) and optional deps/internal/*.
+      # Khronos shader deps and googletest are FetchContent at configure time.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -102,9 +102,9 @@ jobs:
             echo "CACHE_BUILD_TYPE=$BUILD_TYPE" >> "$GITHUB_ENV"
           fi
           # Validate / normalize library type: allow only empty, "shared", or "static".
-          EFFECTIVE_LIB_TYPE="shared"
+          EFFECTIVE_LIB_TYPE="static"
           if [[ -z "$LIB_TYPE" ]]; then
-            # Empty input => default to shared (matches CMake default).
+            # Empty input => default to static (CI default).
             :
           elif [[ "$LIB_TYPE" == "shared" || "$LIB_TYPE" == "static" ]]; then
             EFFECTIVE_LIB_TYPE="$LIB_TYPE"
@@ -122,7 +122,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.BUILD_DIR }}
-          key: build-${{ inputs.platform }}-${{ env.CACHE_BUILD_TYPE }}-${{ env.CACHE_LIB_TYPE }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('**/CMakeLists.txt') }}-${{ hashFiles('.gitmodules') }}
+          key: build-${{ inputs.platform }}-${{ env.CACHE_BUILD_TYPE }}-${{ env.CACHE_LIB_TYPE }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('**/CMakeLists.txt') }}-${{ hashFiles('cmake/Dependencies.cmake', 'tests/CMakeLists.txt', '.gitmodules') }}
           restore-keys: |
             build-${{ inputs.platform }}-${{ env.CACHE_BUILD_TYPE }}-${{ env.CACHE_LIB_TYPE }}-
             build-${{ inputs.platform }}-${{ env.CACHE_BUILD_TYPE }}-

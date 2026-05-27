@@ -36,7 +36,7 @@ set(VNECMAKE_MODULES "${PROJECT_SOURCE_DIR}/cmake/vnecmake/modules")
 if(NOT EXISTS "${VNECMAKE_MODULES}/VneUseDep.cmake")
     message(FATAL_ERROR "vnecmake not found at cmake/vnecmake. Run: git submodule update --init --recursive")
 endif()
-list(APPEND CMAKE_MODULE_PATH "${VNECMAKE_MODULES}")
+list(APPEND CMAKE_MODULE_PATH "${VNECMAKE_MODULES}" "${PROJECT_SOURCE_DIR}/cmake")
 
 include(ProjectSetup)
 include(CompilerOptions)

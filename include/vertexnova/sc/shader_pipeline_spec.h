@@ -10,6 +10,7 @@
 
 #include "shader_pipeline_builder.h"
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>

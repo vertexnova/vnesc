@@ -245,14 +245,17 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
             jb["set"]        = b.set;
             jb["binding"]    = b.binding;
             jb["array_size"] = b.array_size;
-            jb["backend_slot"] = {
-                {"metal_buffer_index",  b.backend_slot.metal_buffer_index},
-                {"metal_texture_index", b.backend_slot.metal_texture_index},
-                {"metal_sampler_index", b.backend_slot.metal_sampler_index},
-                {"wgpu_group",          b.backend_slot.wgpu_group},
-                {"wgpu_binding",        b.backend_slot.wgpu_binding},
-                {"populated",           b.backend_slot.populated}
-            };
+            nlohmann::json jslots = nlohmann::json::object();
+            if (b.slots.metal) {
+                jslots["metal"] = {{"buffer",  b.slots.metal->buffer},
+                                   {"texture", b.slots.metal->texture},
+                                   {"sampler", b.slots.metal->sampler}};
+            }
+            if (b.slots.webgpu) {
+                jslots["webgpu"] = {{"group",   b.slots.webgpu->group},
+                                    {"binding", b.slots.webgpu->binding}};
+            }
+            jb["slots"] = std::move(jslots);
             if (!b.struct_members.empty()) {
                 jb["struct_members"] = nlohmann::json::array();
                 for (const auto& m : b.struct_members) {

@@ -7,12 +7,12 @@
  * Usage:
  *   vnesc_shader_compiler --manifest <path> --output <bundle_dir> [--cache <dir>]
  *
- * Reads:  <path> — JSON file parseable by PipelineBuildManifest
+ * Reads:  <path> — JSON file parseable by ShaderPipelineSpec
  * Writes: <bundle_dir>.vneshader/ directory
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/sc/pipeline_build_manifest.h"
+#include "vertexnova/sc/shader_pipeline_spec.h"
 #include "vertexnova/sc/shader_bundle.h"
 #include "vertexnova/sc/shader_compiler_factory.h"
 #include "vertexnova/sc/shader_pipeline_builder.h"
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     }
 
     // ── Load manifest ─────────────────────────────────────────────────────────
-    auto manifest = vne::sc::loadPipelineBuildManifestFile(manifest_path);
+    auto manifest = vne::sc::loadShaderPipelineSpec(manifest_path);
     if (!manifest.has_value()) {
         std::cerr << "Error: failed to parse manifest: " << manifest_path << "\n";
         return 1;
@@ -87,7 +87,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    vne::sc::PipelineBuildDesc desc = manifest->toBuildDesc();
+    vne::sc::PipelineBuildDesc desc = manifest->toBuildDesc(
+        std::filesystem::path(manifest_path).parent_path());
     if (!cache_dir.empty()) {
         desc.use_cache = true;
         desc.cache_dir = cache_dir;

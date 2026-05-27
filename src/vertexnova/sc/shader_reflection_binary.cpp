@@ -10,6 +10,7 @@
 
 namespace {
 
+constexpr uint32_t kReflectionBinaryVersion = 2u;  // bumped: BackendSlot → ResourceBackendSlots
 constexpr uint32_t kMaxStringLen = 4096;
 constexpr uint32_t kMaxProgramStageCount = 16;
 constexpr uint32_t kMaxBindingCount = 256;
@@ -165,28 +166,45 @@ bool readReflectedStructMember(Reader& r, vne::sc::ReflectedStructMember& m) {
     return r.ok();
 }
 
-void writeBackendSlot(Writer& w, const vne::sc::BackendSlot& s) {
-    w.u32(s.metal_buffer_index);
-    w.u32(s.metal_texture_index);
-    w.u32(s.metal_sampler_index);
-    w.u32(s.wgpu_group);
-    w.u32(s.wgpu_binding);
-    w.boolean(s.populated);
+void writeResourceBackendSlots(Writer& w, const vne::sc::ResourceBackendSlots& s) {
+    w.boolean(s.metal.has_value());
+    if (s.metal) {
+        w.u32(s.metal->buffer);
+        w.u32(s.metal->texture);
+        w.u32(s.metal->sampler);
+    }
+    w.boolean(s.webgpu.has_value());
+    if (s.webgpu) {
+        w.u32(s.webgpu->group);
+        w.u32(s.webgpu->binding);
+    }
 }
 
-bool readBackendSlot(Reader& r, vne::sc::BackendSlot& s) {
+bool readResourceBackendSlots(Reader& r, vne::sc::ResourceBackendSlots& s) {
     if (!r.ok()) {
         return false;
     }
-    s.metal_buffer_index = r.u32();
-    s.metal_texture_index = r.u32();
-    s.metal_sampler_index = r.u32();
-    s.wgpu_group = r.u32();
-    s.wgpu_binding = r.u32();
-    if (!r.ok()) {
-        return false;
+    const bool has_metal = r.boolean();
+    if (has_metal) {
+        vne::sc::MetalResourceSlot metal;
+        metal.buffer  = r.u32();
+        metal.texture = r.u32();
+        metal.sampler = r.u32();
+        if (!r.ok()) {
+            return false;
+        }
+        s.metal = metal;
     }
-    s.populated = r.boolean();
+    const bool has_webgpu = r.boolean();
+    if (has_webgpu) {
+        vne::sc::WebGpuResourceSlot webgpu;
+        webgpu.group   = r.u32();
+        webgpu.binding = r.u32();
+        if (!r.ok()) {
+            return false;
+        }
+        s.webgpu = webgpu;
+    }
     return r.ok();
 }
 
@@ -197,7 +215,7 @@ void writeReflectedBindingInfo(Writer& w, const vne::sc::ReflectedBindingInfo& b
     w.u32(b.binding);
     w.u32(b.array_size);
     w.u32(static_cast<uint32_t>(b.stages));
-    writeBackendSlot(w, b.backend_slot);
+    writeResourceBackendSlots(w, b.slots);
     w.u32(static_cast<uint32_t>(b.struct_members.size()));
     for (const auto& m : b.struct_members) {
         writeReflectedStructMember(w, m);
@@ -217,7 +235,7 @@ bool readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
     b.binding = r.u32();
     b.array_size = r.u32();
     b.stages = static_cast<vne::sc::ShaderStageFlags>(r.u32());
-    if (!r.ok() || !readBackendSlot(r, b.backend_slot)) {
+    if (!r.ok() || !readResourceBackendSlots(r, b.slots)) {
         return false;
     }
     const uint32_t member_count = r.bounded_count(kMaxStructMemberCount);
@@ -287,6 +305,7 @@ bool deserializeStageReflection(const std::string& data, StageReflection& out) {
 
 std::string serializeProgramReflection(const ProgramReflection& reflection) {
     Writer w;
+    w.u32(kReflectionBinaryVersion);
     w.u32(static_cast<uint32_t>(reflection.stages.size()));
     for (const auto& stage : reflection.stages) {
         writeStageReflection(w, stage);
@@ -296,6 +315,10 @@ std::string serializeProgramReflection(const ProgramReflection& reflection) {
 
 bool deserializeProgramReflection(const std::string& data, ProgramReflection& out) {
     Reader r(data);
+    const uint32_t version = r.u32();
+    if (!r.ok() || version != kReflectionBinaryVersion) {
+        return false;
+    }
     const uint32_t count = r.bounded_count(kMaxProgramStageCount);
     if (!r.ok()) {
         return false;

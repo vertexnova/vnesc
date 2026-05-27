@@ -88,3 +88,6 @@ CMakeLists.txt.user
 .grok/
 .grok/
 .grok/
+
+# Python
+__pycache__/

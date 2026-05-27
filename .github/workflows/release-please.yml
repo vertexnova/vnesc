@@ -112,8 +112,8 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          # Check out the exact release tag — not HEAD — so artifacts are
-          # built from the same tree that release-please tagged.
+          # Exact release tag (not HEAD). Submodules: vnecmake (+ optional internal).
+          # SPIRV-Cross, glslang, nlohmann/json, googletest: FetchContent at configure.
           ref: ${{ needs.release-please.outputs.tag_name }}
           submodules: recursive
 
@@ -128,20 +128,20 @@ jobs:
           if [[ -n "${{ matrix.c }}" ]]; then
             COMPILER_FLAGS="-DCMAKE_C_COMPILER=${{ matrix.c }} -DCMAKE_CXX_COMPILER=${{ matrix.cpp }}"
           fi
-          cmake -B build/shared -S . \
+          cmake -B build/static -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DVNE_TEMPLATE_CI=ON \
-            -DVNE_TEMPLATE_LIB_TYPE=shared \
+            -DVNE_TEMPLATE_LIB_TYPE=static \
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" \
             $COMPILER_FLAGS
 
       - name: Build
         shell: bash
-        run: cmake --build build/shared --config Release --parallel
+        run: cmake --build build/static --config Release --parallel
 
       - name: Install to staging directory
         shell: bash
-        run: cmake --install build/shared --config Release --component vnetemplate
+        run: cmake --install build/static --config Release --component vnetemplate
 
       - name: Package artifact
         shell: bash

@@ -109,7 +109,7 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
 
         // ── 3. Reflect ────────────────────────────────────────────────────
         if (reflector_) {
-            ReflectResult rr = reflector_->reflect(stage_artifact.spirv, req.stage);
+            ReflectResult rr = reflector_->reflect(stage_artifact.spirv, req.stage, desc.targets);
             if (rr.ok()) {
                 stage_artifact.reflection = std::move(rr.reflection);
             } else {
@@ -133,13 +133,12 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
 
                 CrossCompileResult ccres = cross_compiler_->crossCompile(ccr);
                 if (ccres.ok()) {
-                    // Apply WGSL binding remap to reflection so BackendSlot matches emitted WGSL.
+                    // Apply WGSL binding remap to reflection so WebGpuResourceSlot matches emitted WGSL.
                     if (target == CrossTarget::eWGSL && !ccres.wgpu_binding_remap.empty()) {
                         for (auto& binding : stage_artifact.reflection.bindings) {
                             for (const auto& remap : ccres.wgpu_binding_remap) {
                                 if (binding.name == remap.name) {
-                                    binding.backend_slot.wgpu_group   = remap.group;
-                                    binding.backend_slot.wgpu_binding = remap.binding;
+                                    binding.slots.webgpu = WebGpuResourceSlot{remap.group, remap.binding};
                                     break;
                                 }
                             }

@@ -10,29 +10,19 @@ if(NOT TARGET vnesc)
 endif()
 
 # ── Google Test ───────────────────────────────────────────────────────────────
-if(EXISTS "${PROJECT_SOURCE_DIR}/deps/external/googletest/CMakeLists.txt")
-    message(STATUS "vnesc tests: using vendored googletest")
-    add_subdirectory(
-        ${PROJECT_SOURCE_DIR}/deps/external/googletest
-        ${CMAKE_BINARY_DIR}/deps/external/googletest
-        EXCLUDE_FROM_ALL)
-    set(GTEST_LIBS gtest gmock)
-else()
-    find_package(GTest QUIET)
-    if(GTest_FOUND)
-        message(STATUS "vnesc tests: using system googletest")
-        set(GTEST_LIBS GTest::gtest GTest::gmock)
-    else()
-        message(STATUS "vnesc tests: fetching googletest v1.17.0")
-        include(FetchContent)
-        FetchContent_Declare(googletest
-            GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG        v1.17.0
-            GIT_SHALLOW    TRUE)
-        FetchContent_MakeAvailable(googletest)
-        set(GTEST_LIBS gtest gmock)
-    endif()
+# Always build from source via FetchContent to guarantee static linkage.
+message(STATUS "vnesc tests: fetching googletest v1.17.0")
+include(FetchContent)
+if(DEFINED VNE_SC_GOOGLETEST_DIR)
+    set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST "${VNE_SC_GOOGLETEST_DIR}" CACHE PATH "" FORCE)
 endif()
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.17.0
+    GIT_SHALLOW    TRUE)
+FetchContent_MakeAvailable(googletest)
+set(GTEST_LIBS gtest gmock)
 
 set(VNESC_TEST_SOURCES
     main.cpp
@@ -40,7 +30,7 @@ set(VNESC_TEST_SOURCES
     shader_artifact_test.cpp
     shader_artifact_cache_test.cpp
     shader_compiler_factory_test.cpp
-    pipeline_build_manifest_test.cpp
+    shader_pipeline_spec_test.cpp
 )
 
 if(VNE_SC_GLSLANG)
@@ -49,7 +39,8 @@ if(VNE_SC_GLSLANG)
         spirvcross_reflector_test.cpp
         dispatch_cross_compiler_test.cpp
         shader_pipeline_builder_test.cpp
-        shader_bundle_test.cpp)
+        shader_bundle_test.cpp
+        shader_pipeline_spec_includes_test.cpp)
 endif()
 
 if(VNE_SC_TINT AND VNE_SC_GLSLANG)

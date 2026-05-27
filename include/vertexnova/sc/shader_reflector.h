@@ -33,7 +33,9 @@ class IShaderReflector {
      * @param stage  Pipeline stage the module belongs to.
      * @returns A @ref ReflectResult whose @c reflection is populated on success.
      */
-    virtual ReflectResult reflect(const std::vector<uint32_t>& spirv, ShaderStage stage) = 0;
+    virtual ReflectResult reflect(const std::vector<uint32_t>& spirv,
+                                  ShaderStage stage,
+                                  const std::vector<CrossTarget>& targets = {}) = 0;
 };
 
 }  // namespace vne::sc

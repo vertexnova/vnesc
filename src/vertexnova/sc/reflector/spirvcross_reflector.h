@@ -21,7 +21,9 @@ namespace vne::sc {
  */
 class SpirvCrossReflector final : public IShaderReflector {
    public:
-    ReflectResult reflect(const std::vector<uint32_t>& spirv, ShaderStage stage) override;
+    ReflectResult reflect(const std::vector<uint32_t>& spirv,
+                          ShaderStage stage,
+                          const std::vector<CrossTarget>& targets = {}) override;
 };
 
 }  // namespace vne::sc

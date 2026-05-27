@@ -6,8 +6,8 @@
 
 ## Checklist
 
-- [ ] Project builds (e.g. `cmake -B build/shared` and `cmake --build build/shared`, or platform script with `-l shared`/`-l static`).
-- [ ] Tests pass (e.g. `ctest --test-dir build/shared` or script `-a test`).
+- [ ] Project builds (e.g. `cmake -B build/static` and `cmake --build build/static`, or platform script with `-l static`).
+- [ ] Tests pass (e.g. `ctest --test-dir build/static` or script `-a test`).
 - [ ] Code is formatted (e.g. run `clang-format` as configured for this repo); CI clang-format will check.
 - [ ] Docs updated if you changed behavior or public API.
 
