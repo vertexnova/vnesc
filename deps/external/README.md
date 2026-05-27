@@ -1,18 +1,24 @@
 # External dependencies
 
-Third-party dependencies live here.
+Third-party dependencies live here. Khronos shader toolchain deps are pinned to tag `vulkan-sdk-1.3.296.0` (see `cmake/VnescDeps.cmake`).
 
-## googletest
+## Initialize all external submodules
 
-- **Path:** `googletest/`
-- **Purpose:** Unit testing (gtest, gmock).
-- **Recommended version:** v1.17.0 or later.
-
-Add as a submodule from the project root:
+From the project root:
 
 ```bash
-git submodule add https://github.com/google/googletest.git deps/external/googletest
-cd deps/external/googletest && git checkout v1.17.0
+git submodule update --init --recursive
 ```
 
-If this directory is empty, the build will use CMake FetchContent to download googletest when tests are enabled.
+## Submodules
+
+| Path | Purpose |
+|------|---------|
+| `googletest/` | Unit tests (gtest, gmock) |
+| `SPIRV-Cross/` | SPIR-V cross-compilation and reflection |
+| `SPIRV-Headers/` | SPIR-V headers (required by glslang) |
+| `glslang/` | GLSL → SPIR-V front-end |
+| `SPIRV-Tools/` | SPIR-V validation (when `VNE_SC_SPIRVTOOLS=ON`) |
+| `nlohmann_json/` | JSON manifests and bundle metadata (when `VNE_SC_JSON=ON`) |
+
+If a vendored tree is missing or empty, CMake uses FetchContent at configure time. Do not set `VNE_SC_*_DIR` to an empty `deps/external/*` path unless you have a valid checkout elsewhere.

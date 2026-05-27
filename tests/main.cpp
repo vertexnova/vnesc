@@ -3,25 +3,15 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   February 2026
+ * Created:   May 2026
  *
  * Autodoc:   yes
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/template/template.h"
-#include "config.h"
+#include <gtest/gtest.h>
 
-namespace vne {
-namespace template_ns {
-
-const char* get_version() {
-    return PROJECT_VERSION;
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
-
-const char* hello() {
-    return "Hello from VneTemplate";
-}
-
-}  // namespace template_ns
-}  // namespace vne
