@@ -102,7 +102,7 @@ def main() -> int:
         "--output", "-o",
         required=True,
         metavar="DIR",
-        help="Output directory for compiled .vneshader bundles",
+        help="Output root directory; each manifest writes to <dir>/<manifest-stem>/",
     )
     parser.add_argument(
         "--cache", "-c",
@@ -140,19 +140,27 @@ def main() -> int:
         sys.stderr.write("error: no manifest files found\n")
         return 1
 
-    output_dir = Path(args.output)
+    output_root = Path(args.output)
     cache_dir = Path(args.cache) if args.cache else None
 
     if args.verbose or args.dry_run:
         print(f"compiler: {compiler}")
         print(f"manifests: {len(manifests)}")
-        print(f"output:   {output_dir}")
+        print(f"output:   {output_root}")
 
     failures: list[tuple[str, str]] = []
 
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
         futures = {
-            pool.submit(compile_one, compiler, m, output_dir, cache_dir, args.dry_run, args.verbose): m
+            pool.submit(
+                compile_one,
+                compiler,
+                m,
+                output_root / m.stem,
+                cache_dir,
+                args.dry_run,
+                args.verbose,
+            ): m
             for m in manifests
         }
         for future in as_completed(futures):
@@ -166,7 +174,7 @@ def main() -> int:
         return 1
 
     if not args.dry_run:
-        print(f"compiled {len(manifests)} manifest(s) → {output_dir}")
+        print(f"compiled {len(manifests)} manifest(s) → {output_root}")
     return 0
 
 
