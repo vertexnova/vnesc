@@ -125,6 +125,8 @@ def main() -> int:
     parser.add_argument("--verbose", "-v", action="store_true", help="Print each manifest being compiled")
 
     args = parser.parse_args()
+    if args.parallel < 1:
+        parser.error("--parallel must be >= 1")
 
     compiler = find_compiler(args.compiler)
     if compiler is None:
