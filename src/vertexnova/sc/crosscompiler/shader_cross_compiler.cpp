@@ -64,8 +64,7 @@ CrossCompileResult ShaderCrossCompiler::crossCompile(const CrossCompileRequest& 
     if (req.target == CrossTarget::eWGSL) {
         VNE_LOG_DEBUG << "ShaderCrossCompiler: routing WGSL to Tint";
     } else {
-        VNE_LOG_DEBUG << "ShaderCrossCompiler: routing target " << static_cast<int>(req.target)
-                      << " to SPIRV-Cross";
+        VNE_LOG_DEBUG << "ShaderCrossCompiler: routing target " << static_cast<int>(req.target) << " to SPIRV-Cross";
     }
     return backend->crossCompile(req);
 }
