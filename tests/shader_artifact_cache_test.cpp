@@ -75,8 +75,7 @@ TEST_F(ShaderArtifactCacheTest, MetalLayoutIgnoredWhenMslNotAmongTargets) {
     custom.buffer_base = defaults.buffer_base + 1u;
     custom.flatten_stride = defaults.flatten_stride + 1u;
 
-    EXPECT_EQ(ShaderArtifactCache::makeKey(req, targets, defaults),
-              ShaderArtifactCache::makeKey(req, targets, custom));
+    EXPECT_EQ(ShaderArtifactCache::makeKey(req, targets, defaults), ShaderArtifactCache::makeKey(req, targets, custom));
 }
 
 TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {
