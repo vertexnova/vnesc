@@ -4,7 +4,7 @@
   "targets": ["msl"],
   "metal_layout": {
     "flatten_stride": 32,
-    "buffer_base": 0
+    "buffer_base": 16
   },
   "stages": [
     { "stage": "vertex", "file": "textured.vert.glsl" },

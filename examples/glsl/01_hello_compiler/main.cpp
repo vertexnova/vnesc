@@ -4,10 +4,11 @@
  * ----------------------------------------------------------------------
  */
 
+#include "logging_guard.h"
+
 #include <vertexnova/sc/vnesc.h>
 
 #include <filesystem>
-#include <iostream>
 
 namespace {
 
@@ -28,9 +29,11 @@ void main() {
 }  // namespace
 
 int main() {
+    vne::sc::examples::LoggingGuard logging;
+
     auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(vne::sc::SourceLang::eGLSL);
     if (!builder) {
-        std::cerr << "No pipeline builder (is VNE_SC_GLSLANG enabled?)\n";
+        VNE_LOG_ERROR << "No pipeline builder (is VNE_SC_GLSLANG enabled?)";
         return 1;
     }
 
@@ -50,26 +53,26 @@ int main() {
 
     desc.stages = {vert, frag};
 
+    VNE_LOG_INFO << "Building pipeline '" << desc.name << "'";
     auto result = builder->build(desc);
     if (!result.ok()) {
-        std::cerr << "Build failed: " << result.error << "\n";
+        VNE_LOG_ERROR << "Build failed: " << result.error;
         return 1;
     }
 
     for (const auto& stage : result.artifact.stages) {
         for (const auto& cc : stage.cross_compiled) {
             if (cc.target == vne::sc::CrossTarget::eMSL) {
-                std::cout << "--- MSL (stage " << static_cast<int>(stage.stage) << ") ---\n";
-                std::cout << cc.source << "\n";
+                VNE_LOG_INFO << "--- MSL (stage " << static_cast<int>(stage.stage) << ") ---\n" << cc.source;
             }
         }
     }
 
     const std::filesystem::path bundle_dir = std::filesystem::temp_directory_path() / "hello_compiler_bundle";
     if (!vne::sc::writeShaderBundle(result.artifact, bundle_dir)) {
-        std::cerr << "Failed to write bundle to " << bundle_dir << "\n";
+        VNE_LOG_ERROR << "Failed to write bundle to " << bundle_dir.string();
         return 1;
     }
-    std::cout << "Bundle written to: " << bundle_dir << "\n";
+    VNE_LOG_INFO << "Bundle written to: " << bundle_dir.string();
     return 0;
 }

@@ -51,8 +51,8 @@ class ShaderArtifactCache {
      * @ref MetalBindingLayout (flatten_stride, buffer_base).
      */
     static std::string makeKey(const CompileRequest& req,
-                              const std::vector<CrossTarget>& targets,
-                              const MetalBindingLayout& metal_layout = {});
+                               const std::vector<CrossTarget>& targets,
+                               const MetalBindingLayout& metal_layout = {});
 
     /**
      * @brief Looks up a cached artifact by key.

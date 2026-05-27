@@ -2,33 +2,20 @@
 /* ---------------------------------------------------------------------
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
- *
- * Common logging configuration for VneTemplate examples
  * ----------------------------------------------------------------------
  */
 
 #include <vertexnova/logging/logging.h>
 
-// Create a logger category for examples
-CREATE_VNE_LOGGER_CATEGORY("vnetemplate.examples")
+CREATE_VNE_LOGGER_CATEGORY("vnesc.examples")
 
-namespace vne::template_ns::examples {
+namespace vne::sc::examples {
 
 /**
- * @class LoggingGuard
- * @brief RAII guard for console logging configuration in examples.
+ * @brief RAII guard — configures console logging for vnesc examples.
  *
- * Initializes the logging system with console output in its constructor
- * and shuts it down in its destructor. Use at the start of main() in example programs.
- *
- * Usage:
- * @code
- * int main() {
- *     LoggingGuard logging_guard;
- *     // ... example code ...
- *     return 0;
- * }
- * @endcode
+ * Place at the start of `main()` so library log output (pipeline, glslang, etc.)
+ * and example messages share the same sink.
  */
 class LoggingGuard {
    public:
@@ -39,7 +26,6 @@ class LoggingGuard {
         config.console_pattern = "[%l] [%n] %v";
         config.log_level = vne::log::LogLevel::eInfo;
         config.async = false;
-
         vne::log::Logging::configureLogger(config);
     }
 
@@ -49,4 +35,4 @@ class LoggingGuard {
     LoggingGuard& operator=(const LoggingGuard&) = delete;
 };
 
-}  // namespace vne::template_ns::examples
+}  // namespace vne::sc::examples

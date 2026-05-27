@@ -27,4 +27,4 @@ Executables are under `build/bin/examples/glsl/<example>/`.
 ## Shared utilities
 
 - `common/shader_loader.h` — load a shader file into a `std::string`
-- `common/logging_guard.h` — optional vnelogging RAII helper (requires `vnelogging` submodule)
+- `common/logging_guard.h` — configures `vne::log` console output; each example uses `LoggingGuard` and `VNE_LOG_*` for its own messages (library internals log through the same sink)

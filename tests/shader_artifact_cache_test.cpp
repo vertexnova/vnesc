@@ -56,8 +56,7 @@ TEST_F(ShaderArtifactCacheTest, DifferentMetalLayoutProducesDifferentKey) {
     MetalBindingLayout defaults;
     MetalBindingLayout custom;
     custom.buffer_base = 0;
-    EXPECT_NE(ShaderArtifactCache::makeKey(req, targets, defaults),
-              ShaderArtifactCache::makeKey(req, targets, custom));
+    EXPECT_NE(ShaderArtifactCache::makeKey(req, targets, defaults), ShaderArtifactCache::makeKey(req, targets, custom));
 }
 
 TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {

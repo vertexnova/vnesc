@@ -4,19 +4,20 @@
  * ----------------------------------------------------------------------
  */
 
-#include "shader_loader.h"
+#include "logging_guard.h"
 
 #include <vertexnova/sc/vnesc.h>
 
 #include <filesystem>
-#include <iostream>
 
 int main() {
+    vne::sc::examples::LoggingGuard logging;
+
     const std::filesystem::path shader_dir = std::filesystem::path(__FILE__).parent_path() / "shaders";
 
     auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(vne::sc::SourceLang::eGLSL);
     if (!builder) {
-        std::cerr << "No pipeline builder\n";
+        VNE_LOG_ERROR << "No pipeline builder";
         return 1;
     }
 
@@ -36,31 +37,33 @@ int main() {
 
     desc.stages = {vert, frag};
 
+    VNE_LOG_INFO << "Building pipeline '" << desc.name << "' from " << shader_dir.string();
     auto result = builder->build(desc);
     if (!result.ok()) {
-        std::cerr << "Build failed: " << result.error << "\n";
+        VNE_LOG_ERROR << "Build failed: " << result.error;
         return 1;
     }
 
     for (const auto& stage : result.artifact.stages) {
-        std::cout << "Stage " << static_cast<int>(stage.stage) << ": " << stage.reflection.bindings.size()
-                  << " binding(s)\n";
+        VNE_LOG_INFO << "Stage " << static_cast<int>(stage.stage) << ": " << stage.reflection.bindings.size()
+                     << " binding(s)";
         for (const auto& b : stage.reflection.bindings) {
-            std::cout << "  " << b.name << " set=" << b.set << " binding=" << b.binding;
             if (b.slots.metal) {
-                std::cout << " metal={buf:" << b.slots.metal->buffer << ",tex:" << b.slots.metal->texture
-                          << ",smp:" << b.slots.metal->sampler << "}";
+                VNE_LOG_INFO << "  " << b.name << " set=" << b.set << " binding=" << b.binding
+                             << " metal={buf:" << b.slots.metal->buffer << ",tex:" << b.slots.metal->texture
+                             << ",smp:" << b.slots.metal->sampler << "}";
+            } else {
+                VNE_LOG_INFO << "  " << b.name << " set=" << b.set << " binding=" << b.binding;
             }
-            std::cout << "\n";
         }
     }
 
     const std::filesystem::path out_dir = std::filesystem::current_path() / "output" / "triangle_bundle";
     std::filesystem::create_directories(out_dir);
     if (!vne::sc::writeShaderBundle(result.artifact, out_dir)) {
-        std::cerr << "Failed to write bundle\n";
+        VNE_LOG_ERROR << "Failed to write bundle";
         return 1;
     }
-    std::cout << "Bundle written to: " << out_dir << "\n";
+    VNE_LOG_INFO << "Bundle written to: " << out_dir.string();
     return 0;
 }
