@@ -193,7 +193,7 @@ bool readResourceBackendSlots(Reader& r, vne::sc::ResourceBackendSlots& s) {
     const bool has_metal = r.boolean();
     if (has_metal) {
         vne::sc::MetalResourceSlot metal;
-        metal.buffer  = r.u32();
+        metal.buffer = r.u32();
         metal.texture = r.u32();
         metal.sampler = r.u32();
         if (!r.ok()) {
@@ -204,7 +204,7 @@ bool readResourceBackendSlots(Reader& r, vne::sc::ResourceBackendSlots& s) {
     const bool has_webgpu = r.boolean();
     if (has_webgpu) {
         vne::sc::WebGpuResourceSlot webgpu;
-        webgpu.group   = r.u32();
+        webgpu.group = r.u32();
         webgpu.binding = r.u32();
         if (!r.ok()) {
             return false;
