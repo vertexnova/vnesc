@@ -155,7 +155,9 @@ ShaderArtifactCache::ShaderArtifactCache(std::string cache_dir)
     }
 }
 
-std::string ShaderArtifactCache::makeKey(const CompileRequest& req, const std::vector<CrossTarget>& targets) {
+std::string ShaderArtifactCache::makeKey(const CompileRequest& req,
+                                         const std::vector<CrossTarget>& targets,
+                                         const MetalBindingLayout& metal_layout) {
     uint64_t h = 0xcbf29ce484222325ULL;
     hashStr(h, req.source);
     hashStr(h, req.file_path);
@@ -176,6 +178,10 @@ std::string ShaderArtifactCache::makeKey(const CompileRequest& req, const std::v
         h ^= static_cast<uint64_t>(t);
         h *= 0x100000001b3ULL;
     }
+    h ^= metal_layout.flatten_stride;
+    h *= 0x100000001b3ULL;
+    h ^= metal_layout.buffer_base;
+    h *= 0x100000001b3ULL;
     return toHex(h);
 }
 

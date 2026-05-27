@@ -61,7 +61,8 @@ PipelineBuildResult ShaderPipelineBuilder::build(const PipelineBuildDesc& desc) 
 
     for (const auto& req : desc.stages) {
         // ── Cache lookup ────────────────────────────────────────────────────
-        const std::string key = cache ? ShaderArtifactCache::makeKey(req, desc.targets) : std::string{};
+        const std::string key =
+            cache ? ShaderArtifactCache::makeKey(req, desc.targets, desc.metal_layout) : std::string{};
 
         if (cache) {
             auto cached = cache->lookup(key);

@@ -49,6 +49,17 @@ TEST_F(ShaderArtifactCacheTest, DifferentSourceProducesDifferentKey) {
     EXPECT_NE(ShaderArtifactCache::makeKey(a, targets), ShaderArtifactCache::makeKey(b, targets));
 }
 
+TEST_F(ShaderArtifactCacheTest, DifferentMetalLayoutProducesDifferentKey) {
+    CompileRequest req;
+    req.source = "void main() {}";
+    std::vector<CrossTarget> targets = {CrossTarget::eMSL};
+    MetalBindingLayout defaults;
+    MetalBindingLayout custom;
+    custom.buffer_base = 0;
+    EXPECT_NE(ShaderArtifactCache::makeKey(req, targets, defaults),
+              ShaderArtifactCache::makeKey(req, targets, custom));
+}
+
 TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {
     namespace fs = std::filesystem;
     auto tmp = makeUniqueTempPath("vnesc_shader_artifact_cache_roundtrip");
