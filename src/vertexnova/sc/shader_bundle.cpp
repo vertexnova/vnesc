@@ -1,6 +1,11 @@
 /* ---------------------------------------------------------------------
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
+ * Autodoc:   yes
  * ----------------------------------------------------------------------
  */
 
@@ -23,7 +28,7 @@ namespace vne::sc {
 namespace {
 
 constexpr char kBundleMagic[4] = {'V', 'N', 'S', 'H'};
-constexpr uint32_t kBundleVersion = 1u;
+constexpr uint32_t kBundleVersion = 2u;
 
 std::string stageSuffix(ShaderStage stage) {
     switch (stage) {
@@ -139,12 +144,14 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
 
         if (const auto* msl = stage.findCrossCompiled(CrossTarget::eMSL)) {
             files.msl_file = base + ".msl";
+            files.msl_entry_point = msl->entry_point;
             if (!writeTextFile(bundle_dir / files.msl_file, msl->source)) {
                 return false;
             }
         }
         if (const auto* wgsl = stage.findCrossCompiled(CrossTarget::eWGSL)) {
             files.wgsl_file = base + ".wgsl";
+            files.wgsl_entry_point = wgsl->entry_point;
             if (!writeTextFile(bundle_dir / files.wgsl_file, wgsl->source)) {
                 return false;
             }
@@ -170,7 +177,9 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
         w.str(s.entry_point);
         w.str(s.spirv_file);
         w.str(s.msl_file);
+        w.str(s.msl_entry_point);
         w.str(s.wgsl_file);
+        w.str(s.wgsl_entry_point);
     }
     if (!writeBinaryFile(bundle_dir / "bundle.header", w.os.str())) {
         return false;
@@ -188,13 +197,102 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
         entry["spirv"] = s.spirv_file;
         if (!s.msl_file.empty()) {
             entry["msl"] = s.msl_file;
+            entry["msl_entry"] = s.msl_entry_point;
         }
         if (!s.wgsl_file.empty()) {
             entry["wgsl"] = s.wgsl_file;
+            entry["wgsl_entry"] = s.wgsl_entry_point;
         }
         manifest["stages"].push_back(std::move(entry));
     }
     writeTextFile(bundle_dir / "manifest.json", manifest.dump(2));
+
+    // Human-readable reflection alongside reflection.bin
+    const ProgramReflection& refl = reflection;
+    nlohmann::json jrefl;
+    jrefl["stages"] = nlohmann::json::array();
+    auto stageStr = [](ShaderStage s) -> std::string {
+        switch (s) {
+            case ShaderStage::eVertex:
+                return "vertex";
+            case ShaderStage::eFragment:
+                return "fragment";
+            case ShaderStage::eCompute:
+                return "compute";
+            case ShaderStage::eGeometry:
+                return "geometry";
+            case ShaderStage::eTessellationControl:
+                return "tess_control";
+            case ShaderStage::eTessellationEvaluation:
+                return "tess_eval";
+        }
+        return "unknown";
+    };
+    auto resourceTypeStr = [](ReflectedResourceType t) -> std::string {
+        switch (t) {
+            case ReflectedResourceType::eUniformBuffer:
+                return "uniform_buffer";
+            case ReflectedResourceType::eStorageBuffer:
+                return "storage_buffer";
+            case ReflectedResourceType::eSampledImage:
+                return "sampled_image";
+            case ReflectedResourceType::eStorageImage:
+                return "storage_image";
+            case ReflectedResourceType::eSampler:
+                return "sampler";
+            case ReflectedResourceType::ePushConstant:
+                return "push_constant";
+            case ReflectedResourceType::eCombinedImageSampler:
+                return "combined_image_sampler";
+            case ReflectedResourceType::eSampledCubemap:
+                return "sampled_cubemap";
+        }
+        return "unknown";
+    };
+    for (const auto& stage : refl.stages) {
+        nlohmann::json js;
+        js["stage"] = stageStr(stage.stage);
+        js["push_constant_size"] = stage.push_constant_size;
+        js["workgroup_size"] = {{"x", stage.workgroup_size.x},
+                                {"y", stage.workgroup_size.y},
+                                {"z", stage.workgroup_size.z}};
+        js["bindings"] = nlohmann::json::array();
+        for (const auto& b : stage.bindings) {
+            nlohmann::json jb;
+            jb["name"] = b.name;
+            jb["type"] = resourceTypeStr(b.type);
+            jb["set"] = b.set;
+            jb["binding"] = b.binding;
+            jb["array_size"] = b.array_size;
+            nlohmann::json jslots = nlohmann::json::object();
+            if (b.slots.metal) {
+                jslots["metal"] = {{"buffer", b.slots.metal->buffer},
+                                   {"texture", b.slots.metal->texture},
+                                   {"sampler", b.slots.metal->sampler}};
+            }
+            if (b.slots.webgpu) {
+                jslots["webgpu"] = {{"group", b.slots.webgpu->group}, {"binding", b.slots.webgpu->binding}};
+            }
+            jb["slots"] = std::move(jslots);
+            if (!b.struct_members.empty()) {
+                jb["struct_members"] = nlohmann::json::array();
+                for (const auto& m : b.struct_members) {
+                    jb["struct_members"].push_back({{"name", m.name},
+                                                    {"offset", m.offset},
+                                                    {"size", m.size},
+                                                    {"array_count", m.array_count},
+                                                    {"array_stride", m.array_stride},
+                                                    {"is_matrix", m.is_matrix},
+                                                    {"matrix_columns", m.matrix_columns},
+                                                    {"matrix_rows", m.matrix_rows},
+                                                    {"type_name", m.type_name}});
+                }
+            }
+            js["bindings"].push_back(std::move(jb));
+        }
+        jrefl["stages"].push_back(std::move(js));
+    }
+    writeTextFile(bundle_dir / "reflection.json", jrefl.dump(2));
 #endif
 
     VNE_LOG_INFO << "writeShaderBundle: wrote bundle to " << bundle_dir;
@@ -240,7 +338,9 @@ std::optional<ShaderBundleHeader> readShaderBundleHeader(const std::filesystem::
             s.entry_point = r.str();
             s.spirv_file = r.str();
             s.msl_file = r.str();
+            s.msl_entry_point = r.str();
             s.wgsl_file = r.str();
+            s.wgsl_entry_point = r.str();
         }
         if (!r.ok()) {
             return std::nullopt;

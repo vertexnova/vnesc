@@ -1,24 +1,19 @@
 # External dependencies
 
-Third-party dependencies live here. Khronos shader toolchain deps are pinned to tag `vulkan-sdk-1.3.296.0` (see `cmake/VnescDeps.cmake`).
+Third-party dependencies for **vnesc** are resolved at **CMake configure** time via `cmake/Dependencies.cmake` (FetchContent), not git submodules.
 
-## Initialize all external submodules
+Pinned versions (Khronos): tag `vulkan-sdk-1.3.296.0`. nlohmann/json: `v3.11.3`.
 
-From the project root:
+| Dependency | When fetched | Override |
+|------------|--------------|----------|
+| SPIRV-Cross | always | `-DVNE_SC_SPIRV_CROSS_DIR=` |
+| SPIRV-Headers, glslang | `VNE_SC_GLSLANG=ON` (default ON) | `-DVNE_SC_SPIRV_HEADERS_DIR=`, `-DVNE_SC_GLSLANG_DIR=` |
+| SPIRV-Tools | `VNE_SC_SPIRVTOOLS=ON` | `-DVNE_SC_SPIRV_TOOLS_DIR=` |
+| nlohmann/json | `VNE_SC_JSON=ON` (default ON) | `-DVNE_SC_JSON_DIR=` |
+| Dawn/Tint | `VNE_SC_TINT=ON` (default OFF) | FetchContent only |
 
-```bash
-git submodule update --init --recursive
-```
+**Google Test** (when tests are enabled): `tests/CMakeLists.txt` uses system GTest if found, otherwise FetchContent `v1.17.0`. Optional override: `-DVNE_SC_GOOGLETEST_DIR=`.
 
-## Submodules
+Local checkouts under `deps/external/*` are optional; if you set a `VNE_SC_*_DIR` cache variable, it must point at a tree that contains `CMakeLists.txt`.
 
-| Path | Purpose |
-|------|---------|
-| `googletest/` | Unit tests (gtest, gmock) |
-| `SPIRV-Cross/` | SPIR-V cross-compilation and reflection |
-| `SPIRV-Headers/` | SPIR-V headers (required by glslang) |
-| `glslang/` | GLSL → SPIR-V front-end |
-| `SPIRV-Tools/` | SPIR-V validation (when `VNE_SC_SPIRVTOOLS=ON`) |
-| `nlohmann_json/` | JSON manifests and bundle metadata (when `VNE_SC_JSON=ON`) |
-
-If a vendored tree is missing or empty, CMake uses FetchContent at configure time. Do not set `VNE_SC_*_DIR` to an empty `deps/external/*` path unless you have a valid checkout elsewhere.
+CI and release builds run `git submodule update --init --recursive` only for entries in `.gitmodules` (e.g. **vnecmake**, optional **vnecommon** / **vnelogging**). Shader toolchain sources are downloaded into `build/<lib_type>/_deps/` during `cmake` configure.

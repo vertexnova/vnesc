@@ -1,149 +1,277 @@
 <p align="center">
-  <img src="icons/vertexnova_logo_medallion_with_text.svg" alt="VertexNova Template" width="320"/>
+  <img src="icons/vertexnova_logo_medallion_with_text.svg" alt="VertexNova Shader Compiler" width="320"/>
 </p>
 
 <p align="center">
-  <strong>Minimal C++ project template for the VertexNova ecosystem</strong>
+  <strong>Offline shader compiler library for the VertexNova ecosystem</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/vertexnova/vnetemplate/actions/workflows/ci.yml">
-    <img src="https://github.com/vertexnova/vnetemplate/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/>
+  <a href="https://github.com/vertexnova/vnesc/actions/workflows/ci.yml">
+    <img src="https://github.com/vertexnova/vnesc/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/>
+  </a>
+  <a href="https://codecov.io/gh/vertexnova/vnesc">
+    <img src="https://codecov.io/gh/vertexnova/vnesc/branch/main/graph/badge.svg" alt="Coverage"/>
   </a>
   <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Standard"/>
-  <a href="https://codecov.io/gh/vertexnova/vnetemplate">
-    <img src="https://codecov.io/gh/vertexnova/vnetemplate/branch/main/graph/badge.svg" alt="Coverage"/>
-  </a>
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License"/>
 </p>
 
 ---
 
-# VneTemplate
+## About
 
-Minimal VertexNova-standard C++ template: CMake, deps (external + internal), tests, examples, and documentation. Use it as a starting point for new libraries or apps in the [VertexNova](https://github.com/vertexnova) stack.
+**vnesc** is an offline shader compiler library that transforms GLSL source into a portable `.vneshader` bundle: SPIR-V bytecode, cross-compiled MSL/WGSL/HLSL output, and typed resource-binding reflection — all ready for direct consumption by [vnerhi](https://github.com/vertexnova/vnerhi).
 
-## Directory layout
+It is a core component of [VertexNova](https://github.com/vertexnova), a multi-backend graphics engine targeting Vulkan, Metal, WebGPU, and OpenGL/ES from a single source.
 
-| Path | Description |
-|------|-------------|
-| `cmake/vnecmake/` | CMake modules submodule (ProjectSetup, ProjectWarnings, VneUseDep) |
-| `configs/` | Configured headers (e.g. `config.h.in`) |
-| `deps/external/` | Third-party deps (e.g. googletest) |
-| `deps/internal/` | VertexNova internal libs (vnecommon, vnelogging) |
-| `include/` | Public API headers (`vertexnova/template/`) |
-| `src/` | Implementation |
-| `tests/` | Unit tests (Google Test) |
-| `docs/` | Doxygen input (`doxyfile.in`) and extra docs |
-| `scripts/` | Helper scripts (build, format, generate-docs) |
+## Features
 
-## Prerequisites
+- **Full offline pipeline**: GLSL → SPIR-V → validate → reflect → cross-compile in one call
+- **Multi-target output**: MSL (Metal), WGSL (WebGPU), HLSL, GLSL ES from a single GLSL source
+- **Typed reflection**: per-binding resource metadata with typed optional backend slots (`MetalResourceSlot`, `WebGpuResourceSlot`)
+- **Artifact cache**: content-addressed file cache skips recompiling unchanged shaders
+- **`.vneshader` bundle**: self-contained directory — SPIR-V + cross-compiled sources + binary reflection
+- **JSON pipeline spec**: declare a full multi-stage pipeline in a `.pipeline.json` file; `include_paths` resolve relative to the spec file
+- **CLI tool**: `vnesc_shader_compiler` drives the full pipeline from the command line
+- **Python batch tool**: `tools/compile_shaders.py` — parallel glob-aware wrapper around the CLI
+- **Extensible interfaces**: `IShaderFrontEnd`, `IShaderCrossCompiler`, `IShaderReflector`, `IShaderValidator`
+- **C++20, header-only public API**: single umbrella include `<vertexnova/sc/vnesc.h>`
 
-- **CMake** 3.19 or newer  
-- **C++20** compiler (e.g. GCC 10+, Clang 10+, MSVC 2019+)  
-- **Doxygen** (optional, for `scripts/generate-docs.sh` and `-DENABLE_DOXYGEN=ON`)
+## Installation
 
-## Dependencies
-
-- **External:** Tests use [Google Test](https://github.com/google/googletest). Either add `deps/external/googletest` as a submodule (recommended tag: `v1.17.0`) or let CMake use FetchContent when the directory is missing.  
-- **Internal:** **vnecmake** (required) is the CMake modules submodule at `cmake/vnecmake`. Optional libraries `vnecommon` and `vnelogging` go under `deps/internal/`. See [deps/README.md](deps/README.md). If they are missing, the template still builds but does not link to `vne::common` or `vne::logging`.
-
-From the project root:
+### As a git submodule (recommended for VertexNova projects)
 
 ```bash
+git submodule add https://github.com/vertexnova/vnesc.git deps/internal/vnesc
 git submodule update --init --recursive
 ```
 
-(Add submodules first if your repo uses them; see `deps/README.md`.)
-
-## Build
-
-Builds use **`build/static`** or **`build/shared`** (one library type per directory). From the project root:
-
-```bash
-# Shared library (default)
-cmake -B build/shared -DCMAKE_BUILD_TYPE=Debug -DVNE_TEMPLATE_TESTS=ON
-cmake --build build/shared
-
-# Static library
-cmake -B build/static -DCMAKE_BUILD_TYPE=Debug -DVNE_TEMPLATE_LIB_TYPE=static -DVNE_TEMPLATE_TESTS=ON
-cmake --build build/static
+```cmake
+add_subdirectory(deps/internal/vnesc)
+target_link_libraries(your_target PRIVATE vnesc vnesc_glslang)
 ```
 
-Or use the platform scripts (they use `build/<lib_type>/...`):
+### FetchContent
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(vnesc
+    GIT_REPOSITORY https://github.com/vertexnova/vnesc.git
+    GIT_TAG        main
+    GIT_SHALLOW    TRUE)
+FetchContent_MakeAvailable(vnesc)
+target_link_libraries(your_target PRIVATE vnesc vnesc_glslang)
+```
+
+> When used as a dependency, tests and examples are off by default (`VNE_SC_TESTS=OFF`, `VNE_SC_EXAMPLES=OFF`).
+
+## Building
 
 ```bash
-# macOS (default: shared)
-./scripts/build_macos.sh -t Debug -a configure_and_build
-./scripts/build_macos.sh -l static -t Release -a configure_and_build   # static in build/static/...
+git clone --recursive https://github.com/vertexnova/vnesc.git
+cd vnesc
+
+# Configure (glslang + JSON enabled by default)
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+# Build library + CLI tool
+cmake --build build --target vnesc vnesc_shader_compiler -j$(nproc)
+
+# Run tests
+ctest --test-dir build --output-on-failure
+```
+
+### Platform scripts
+
+```bash
+# macOS
+./scripts/build_macos.sh -a configure_and_build
+./scripts/build_macos.sh -a test -clean
 
 # Linux
-./scripts/build_linux.sh -t Debug -a configure_and_build
-./scripts/build_linux.sh -l static -c clang -a test
+./scripts/build_linux.sh -t Release -a configure_and_build
+./scripts/build_linux.sh -c clang -a test
 
-# Windows
-.\scripts\build_windows.ps1 -BuildType Debug -Action configure_and_build
-.\scripts\build_windows.ps1 -LibType static -BuildType Release -Action configure_and_build   # static in build/static/...
+# Windows (PowerShell)
+.\scripts\build_windows.ps1 -BuildType Release -Action configure_and_build
+.\scripts\build_windows.ps1 -Action test
 ```
 
-Options: `-t` / `-BuildType` build type, `-a` / `-Action` action, `-l` / `-LibType` lib type (`static` | `shared`, default `shared`), `-clean` / `-Clean`, `-j N` / `-Jobs N`. macOS script also supports `-xcode` for Xcode project.
+Options: `-t` / `-BuildType` build type, `-a` / `-Action` action (`configure_and_build` | `build` | `test`), `-clean`, `-j N` jobs. macOS also accepts `-xcode` for an Xcode project.
 
-## Test
+### CMake options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `VNE_SC_GLSLANG` | `ON` | Enable glslang GLSL → SPIR-V front-end |
+| `VNE_SC_JSON` | `ON` | Enable nlohmann/json for `.pipeline.json` specs and bundle manifests |
+| `VNE_SC_SPIRVTOOLS` | `OFF` | Enable SPIRV-Tools SPIR-V validator |
+| `VNE_SC_TINT` | `OFF` | Enable Dawn Tint SPIR-V → WGSL cross-compiler |
+| `VNE_SC_DXC` | `OFF` | Enable DXC HLSL → SPIR-V front-end (stub) |
+| `VNE_SC_SLANG` | `OFF` | Enable Slang front-end (stub) |
+| `VNE_SC_TESTS` | `ON` | Build the test suite |
+| `VNE_SC_EXAMPLES` | `OFF` | Build example programs |
+| `VNE_SC_TOOLS` | `ON` | Build `vnesc_shader_compiler` CLI |
+| `ENABLE_DOXYGEN` | `OFF` | Generate API docs with Doxygen |
+| `ENABLE_COVERAGE` | `OFF` | Enable gcov/lcov code coverage |
+| `ENABLE_ASAN` | `OFF` | Enable AddressSanitizer + UBSan |
+| `WARNINGS_AS_ERRORS` | `OFF` | Treat compiler warnings as errors |
+
+## Quick start
+
+### Compile a single shader (low-level)
+
+```cpp
+#include <vertexnova/sc/vnesc.h>
+
+auto factory = vne::sc::ShaderCompilerFactory::createFrontEnd(vne::sc::SourceLang::eGLSL);
+
+vne::sc::CompileRequest req;
+req.source    = glsl_source_string;
+req.stage     = vne::sc::ShaderStage::eVertex;
+req.entry_point = "main";
+
+auto result = factory->compile(req);
+if (!result.ok()) {
+    // result.errors contains per-error messages
+}
+// result.spirv — compiled SPIR-V words
+```
+
+### Build a full pipeline (recommended)
+
+```cpp
+#include <vertexnova/sc/vnesc.h>
+
+// Factory creates and wires all components for you
+auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(vne::sc::SourceLang::eGLSL);
+
+vne::sc::PipelineBuildDesc desc;
+desc.name     = "mesh_phong";
+desc.targets  = { vne::sc::CrossTarget::eMSL, vne::sc::CrossTarget::eWGSL };
+desc.validate = true;
+
+vne::sc::CompileRequest vert, frag;
+vert.source = vert_glsl;  vert.stage = vne::sc::ShaderStage::eVertex;
+frag.source = frag_glsl;  frag.stage = vne::sc::ShaderStage::eFragment;
+desc.stages  = { vert, frag };
+
+auto result = builder->build(desc);
+if (result.ok()) {
+    vne::sc::writeShaderBundle(result.artifact, "output/mesh_phong.vneshader");
+}
+```
+
+### Load a pipeline spec from JSON
+
+```cpp
+#include <vertexnova/sc/vnesc.h>
+
+auto spec = vne::sc::loadShaderPipelineSpec("shaders/src/mesh_phong.pipeline.json");
+if (spec) {
+    auto desc    = spec->toBuildDesc(std::filesystem::path("shaders/src"));
+    auto builder = vne::sc::ShaderCompilerFactory::createPipelineBuilder(spec->source_lang);
+    auto result  = builder->build(desc);
+}
+```
+
+## Pipeline spec format (`.pipeline.json`)
+
+```json
+{
+  "name": "mesh_phong",
+  "source_lang": "glsl",
+  "include_paths": ["../common/glsl"],
+  "targets": ["msl", "wgsl"],
+  "stages": [
+    { "stage": "vertex",   "file": "mesh_phong.vert.glsl" },
+    { "stage": "fragment", "file": "mesh_phong.frag.glsl" }
+  ]
+}
+```
+
+`include_paths` entries are resolved relative to the spec file's directory and forwarded as `#include` search paths to glslang.
+
+## CLI tool
 
 ```bash
-ctest -C Debug --test-dir build/shared
-# or for static: ctest -C Debug --test-dir build/static
+# Compile one pipeline spec → .vneshader bundle
+vnesc_shader_compiler \
+    --manifest shaders/src/mesh_phong.pipeline.json \
+    --output   output/bundles \
+    --cache    .shader_cache
+
+# Batch-compile with the Python wrapper (parallel, glob-aware)
+python3 tools/compile_shaders.py \
+    --manifest "shaders/src/**/*.pipeline.json" \
+    --output   output/bundles \
+    --cache    .shader_cache \
+    --parallel 8
 ```
 
-Or:
+## Bundle format (`.vneshader`)
 
-```bash
-./scripts/build_macos.sh -a test
+A compiled `.vneshader` is a directory:
+
+| File | Contents |
+|------|----------|
+| `bundle.header` | Binary index: stage list, entry points, file names |
+| `reflection.bin` | Binary `ProgramReflection` (v2 format) |
+| `manifest.json` | Human-readable index (when `VNE_SC_JSON` is enabled) |
+| `<stage>.spv` | SPIR-V bytecode |
+| `<stage>.msl` | MSL source (when `msl` target requested) |
+| `<stage>.wgsl` | WGSL source (when `wgsl` target requested) |
+
+The binary reflection (`reflection.bin`) stores typed per-backend resource slots:
+
 ```
+metal:  { buffer, texture, sampler }   — present only when MSL was compiled
+webgpu: { group, binding }             — present only when WGSL was compiled
+```
+
+## Platform support
+
+| Platform | Status | Compiler |
+|----------|--------|---------|
+| macOS | Tested | Apple Clang 15+, Clang 17+ |
+| Linux | Tested | GCC 10+, Clang 10+ |
+| Windows | Tested | MSVC 2019+ |
 
 ## Documentation
 
-- **Template overview and diagrams:** [docs/vertexnova/template/template.md](docs/vertexnova/template/template.md) — context and API diagrams (Draw.io sources in `docs/vertexnova/template/diagrams/`).
-- **API docs:** Configure with Doxygen enabled and build the doc target:
+- **Architecture doc**: [docs/vertexnova/sc/](docs/vertexnova/sc/) — pipeline design, reflection format, bundle layout
+- **API docs**: Build with Doxygen:
 
   ```bash
-  cmake -B build/shared -DENABLE_DOXYGEN=ON
-  cmake --build build/shared --target vnetemplate_doc_doxygen
+  cmake -B build -DENABLE_DOXYGEN=ON
+  cmake --build build --target vnesc_doc_doxygen
+  # Output: build/docs/html/index.html
   ```
 
-  Output: `build/shared/docs/html/index.html`.
-
-- **Script:** From project root:
+- **Doxygen script**:
 
   ```bash
   ./scripts/generate-docs.sh
   ```
 
-  Use `--api-only` to only generate API docs, or `--validate` to only check links and coverage. See `./scripts/generate-docs.sh --help`.
+## Requirements
 
-## Format and tidy
-
-- **clang-format:** Config in [.clang-format](.clang-format). Format in place or check only (CI):
-  ```bash
-  ./scripts/format.sh          # format sources
-  ./scripts/format.sh -check   # check only (used in CI)
-  ```
-- **clang-tidy:** Config in [.clang-tidy](.clang-tidy). Generate `compile_commands.json` (e.g. `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build/shared`), then run `clang-tidy -p build/shared`.
-
-## CI
-
-GitHub Actions runs on push and pull requests to `main`: format check, clang-tidy, and build/test on Linux (GCC, Clang), macOS, and Windows. See [.github/workflows/ci.yml](.github/workflows/ci.yml).
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and style. We follow the [Contributor Covenant](CODE_OF_CONDUCT.md) Code of Conduct.
+- C++20 or later
+- CMake 3.19+
+- Compiler: GCC 10+, Clang 10+, MSVC 2019+
+- Python 3.10+ (for `tools/compile_shaders.py`)
 
 ## Releases
 
-Releases are manual. The **VERSION** file at the repo root is the source of truth; CMake reads it at configure time and exposes it as `get_version()`.
-
-To cut a release: update **VERSION**, add a dated entry to **CHANGELOG.md**, commit, create and push a tag (e.g. `git tag v1.0.0 && git push origin v1.0.0`), then create a GitHub Release from that tag and paste the CHANGELOG section.
+The **VERSION** file at the repo root is the single source of truth; CMake reads it at configure time. Releases are cut via [release-please](https://github.com/googleapis/release-please) on merge to `main`. See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## License
 
-See [LICENSE](LICENSE).
+Apache License 2.0 — See [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Part of the <a href="https://github.com/vertexnova">VertexNova</a> project
+</p>

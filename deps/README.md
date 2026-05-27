@@ -1,84 +1,32 @@
 # Dependencies
 
-This directory holds external and internal dependencies for VneTemplate.
+This directory holds optional vendored trees and internal VertexNova libraries.
 
 ## Layout
 
-- **external/** – Third-party dependencies (e.g. Google Test).
-- **internal/** – VertexNova internal libraries (vnecommon, vnelogging).
+- **external/** – Optional local overrides for FetchContent deps (see [external/README.md](external/README.md)).
+- **internal/** – Optional VertexNova libraries (vnecommon, vnelogging).
 
-CMake modules (vnecmake) live in **cmake/vnecmake** at the project root; see main [README](../README.md).
+CMake modules (**vnecmake**) live at **cmake/vnecmake** and are a **required** git submodule.
 
-## Getting dependencies
+## Git submodules (`.gitmodules`)
 
-`.gitmodules` defines these submodules (run `git submodule update --init --recursive` from the project root):
+| Submodule | Path | Required |
+|-----------|------|----------|
+| vnecmake | `cmake/vnecmake` | yes |
+| vnecommon | `deps/internal/vnecommon` | no |
+| vnelogging | `deps/internal/vnelogging` | no |
 
-| Submodule | Path | URL |
-|-----------|------|-----|
-| vnecmake | `cmake/vnecmake` | https://github.com/vertexnova/vnecmake.git |
-| googletest | `deps/external/googletest` | https://github.com/google/googletest.git |
-| SPIRV-Cross | `deps/external/SPIRV-Cross` | https://github.com/KhronosGroup/SPIRV-Cross.git |
-| SPIRV-Headers | `deps/external/SPIRV-Headers` | https://github.com/KhronosGroup/SPIRV-Headers.git |
-| glslang | `deps/external/glslang` | https://github.com/KhronosGroup/glslang.git |
-| SPIRV-Tools | `deps/external/SPIRV-Tools` | https://github.com/KhronosGroup/SPIRV-Tools.git |
-| nlohmann_json | `deps/external/nlohmann_json` | https://github.com/nlohmann/json.git |
-| vnecommon | `deps/internal/vnecommon` | https://github.com/vertexnova/vnecommon.git |
-| vnelogging | `deps/internal/vnelogging` | https://github.com/vertexnova/vnelogging.git |
-
-After cloning, initialize and update them from the project root:
+From the project root:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-The sections below give per-dependency details and optional `git submodule add` commands for repos that don’t yet have these entries.
+## FetchContent (configure time)
 
-### vnecmake (required)
+Shader compiler and JSON dependencies are **not** submodules. They are declared in `cmake/Dependencies.cmake` and downloaded when you run `cmake` (unless you pass a local `VNE_SC_*_DIR` override).
 
-CMake modules come from the **vnecmake** submodule at `cmake/vnecmake`. From the project root:
+Tests use **googletest** via FetchContent when system GTest is not installed (`tests/CMakeLists.txt`).
 
-```bash
-git submodule add <vnecmake-repo-url> cmake/vnecmake
-git submodule update --init --recursive
-```
-
-If already in `.gitmodules`, run `git submodule update --init --recursive`.
-
-### External: Google Test
-
-Tests use Google Test from `deps/external/googletest`. Either:
-
-1. **Git submodule (recommended)**  
-   From the project root:
-   ```bash
-   git submodule add https://github.com/google/googletest.git deps/external/googletest
-   git submodule update --init --recursive
-   ```
-   Use tag `v1.17.0` (or later) if you pin:  
-   `cd deps/external/googletest && git checkout v1.17.0`
-
-2. **FetchContent fallback**  
-   If `deps/external/googletest` is not present, the CMake configuration for tests will use FetchContent to download googletest (v1.17.0) at configure time.
-
-### Internal: vnecommon and vnelogging
-
-The library optionally links to VertexNova internal dependencies when present:
-
-- **deps/internal/vnecommon** – Common utilities.
-- **deps/internal/vnelogging** – Logging (e.g. spdlog-based).
-
-**In this repo (VneTemplate):** `.gitmodules` already lists these paths. Just run from the project root:
-
-```bash
-git submodule update --init --recursive
-```
-
-**In a downstream repo** that does not yet have these submodules in `.gitmodules`, add them from the project root (omit any that already exist):
-
-```bash
-git submodule add https://github.com/vertexnova/vnecommon.git deps/internal/vnecommon
-git submodule add https://github.com/vertexnova/vnelogging.git deps/internal/vnelogging
-git submodule update --init --recursive
-```
-
-See the README in each internal dependency directory for recommended branch/tag and build options.
+CI and release workflows still use `submodules: recursive` so **vnecmake** is present; Khronos and googletest are fetched during the CMake configure step on the runner (network required on cache miss).

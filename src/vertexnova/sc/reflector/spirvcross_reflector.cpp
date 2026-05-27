@@ -4,6 +4,8 @@
  *
  * Author:    Ajeet Singh Yadav
  * Created:   May 2026
+ *
+ * Autodoc:   yes
  * ----------------------------------------------------------------------
  */
 
@@ -14,10 +16,12 @@
 
 #include "vertexnova/logging/logging.h"
 
-#include <string>
-#include <vector>
+#include <algorithm>
 #include <cstdint>
 #include <exception>
+#include <memory>
+#include <string>
+#include <vector>
 
 CREATE_VNE_LOGGER_CATEGORY("vne.sc.reflector")
 
@@ -68,7 +72,8 @@ std::vector<vne::sc::ReflectedStructMember> reflectStructMembers(const spirv_cro
 // ── Populate one ReflectedBindingInfo from a SPIRV-Cross resource ────────────
 template<vne::sc::ReflectedResourceType Type>
 void appendBinding(const spirv_cross::Compiler& compiler,
-                   const spirv_cross::CompilerMSL& msl,
+                   const spirv_cross::CompilerMSL* msl,  // nullptr → MSL not a target
+                   bool has_webgpu,
                    const spirv_cross::Resource& res,
                    vne::sc::ShaderStage stage,
                    std::vector<vne::sc::ReflectedBindingInfo>& out) {
@@ -88,44 +93,50 @@ void appendBinding(const spirv_cross::Compiler& compiler,
         }
     }
 
-    // ── Backend slot assignment (prefer SPIRV-Cross automatic, fallback formula) ─
-    BackendSlot slot;
-    try {
-        const uint32_t primary = msl.get_automatic_msl_resource_binding(res.id);
-        if (primary != ~0u) {
-            slot.populated = true;
-            if constexpr (Type == ReflectedResourceType::eUniformBuffer
-                          || Type == ReflectedResourceType::eStorageBuffer) {
-                slot.metal_buffer_index = primary;
-            } else if constexpr (Type == ReflectedResourceType::eSampledImage
-                                 || Type == ReflectedResourceType::eStorageImage) {
-                slot.metal_texture_index = primary;
-            } else if constexpr (Type == ReflectedResourceType::eSampler) {
-                slot.metal_sampler_index = primary;
-            } else if constexpr (Type == ReflectedResourceType::eCombinedImageSampler) {
-                slot.metal_texture_index = primary;
-                const uint32_t sec = msl.get_automatic_msl_resource_binding_secondary(res.id);
-                if (sec != ~0u) {
-                    slot.metal_sampler_index = sec;
+    // ── Backend slot assignment ───────────────────────────────────────────────
+    ResourceBackendSlots slots;
+
+    if (msl) {
+        MetalResourceSlot metal;
+        bool from_spirvcross = false;
+        try {
+            const uint32_t primary = msl->get_automatic_msl_resource_binding(res.id);
+            if (primary != ~0u) {
+                from_spirvcross = true;
+                if constexpr (Type == ReflectedResourceType::eUniformBuffer
+                              || Type == ReflectedResourceType::eStorageBuffer) {
+                    metal.buffer = primary;
+                } else if constexpr (Type == ReflectedResourceType::eSampledImage
+                                     || Type == ReflectedResourceType::eStorageImage) {
+                    metal.texture = primary;
+                } else if constexpr (Type == ReflectedResourceType::eSampler) {
+                    metal.sampler = primary;
+                } else if constexpr (Type == ReflectedResourceType::eCombinedImageSampler) {
+                    metal.texture = primary;
+                    const uint32_t sec = msl->get_automatic_msl_resource_binding_secondary(res.id);
+                    if (sec != ~0u) {
+                        metal.sampler = sec;
+                    }
                 }
             }
+        } catch (...) {
         }
-    } catch (...) {
+        if (!from_spirvcross) {
+            // Deterministic fallback formula when SPIRV-Cross auto-binding unavailable
+            if constexpr (Type == ReflectedResourceType::eUniformBuffer
+                          || Type == ReflectedResourceType::eStorageBuffer) {
+                metal.buffer = metalBuf(set, binding);
+            } else {
+                metal.texture = metalTex(set, binding);
+                metal.sampler = metalSmp(set, binding);
+            }
+        }
+        slots.metal = metal;
     }
 
-    if (!slot.populated) {
-        slot.populated = true;
-        if constexpr (Type == ReflectedResourceType::eUniformBuffer || Type == ReflectedResourceType::eStorageBuffer) {
-            slot.metal_buffer_index = metalBuf(set, binding);
-        } else {
-            slot.metal_texture_index = metalTex(set, binding);
-            slot.metal_sampler_index = metalSmp(set, binding);
-        }
+    if (has_webgpu) {
+        slots.webgpu = WebGpuResourceSlot{set, binding};
     }
-
-    // WebGPU slot mirrors Vulkan set/binding directly
-    slot.wgpu_group = set;
-    slot.wgpu_binding = binding;
 
     // ── Assemble binding info ─────────────────────────────────────────────────
     ReflectedBindingInfo info;
@@ -135,7 +146,7 @@ void appendBinding(const spirv_cross::Compiler& compiler,
     info.binding = binding;
     info.array_size = array_size;
     info.stages = ShaderStageFlags::eNone;  // caller sets stage flags
-    info.backend_slot = slot;
+    info.slots = slots;
 
     // Struct members for buffer types
     if constexpr (Type == ReflectedResourceType::eUniformBuffer || Type == ReflectedResourceType::eStorageBuffer) {
@@ -173,7 +184,9 @@ vne::sc::ShaderStageFlags stageToFlag(vne::sc::ShaderStage s) noexcept {
 
 namespace vne::sc {
 
-ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, ShaderStage stage) {
+ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv,
+                                           ShaderStage stage,
+                                           const std::vector<CrossTarget>& targets) {
     ReflectResult result;
 
     if (spirv.empty()) {
@@ -183,18 +196,22 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, S
         return result;
     }
 
+    const bool has_msl = std::find(targets.begin(), targets.end(), CrossTarget::eMSL) != targets.end();
+    const bool has_webgpu = std::find(targets.begin(), targets.end(), CrossTarget::eWGSL) != targets.end();
+
     try {
         // Base compiler for Vulkan reflection
         spirv_cross::Compiler compiler(spirv.data(), spirv.size());
 
-        // MSL compiler to populate automatic Metal slot assignments
-        spirv_cross::CompilerMSL msl_compiler(spirv.data(), spirv.size());
-        {
+        // MSL compiler — only instantiated when eMSL is a requested target
+        std::unique_ptr<spirv_cross::CompilerMSL> msl_compiler;
+        if (has_msl) {
+            msl_compiler = std::make_unique<spirv_cross::CompilerMSL>(spirv.data(), spirv.size());
             spirv_cross::CompilerMSL::Options msl_opts;
             msl_opts.platform = spirv_cross::CompilerMSL::Options::macOS;
-            msl_compiler.set_msl_options(msl_opts);
+            msl_compiler->set_msl_options(msl_opts);
             try {
-                msl_compiler.compile();
+                msl_compiler->compile();
             } catch (...) {
                 VNE_LOG_WARN << "SpirvCrossReflector: MSL compile pass failed; using fallback slot formula";
             }
@@ -209,9 +226,9 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv, S
 
         auto& bindings = sr.bindings;
 
-#define VNE_REFLECT_LIST(Type, list)                                                              \
-    for (const auto& res : resources.list) {                                                      \
-        appendBinding<ReflectedResourceType::Type>(compiler, msl_compiler, res, stage, bindings); \
+#define VNE_REFLECT_LIST(Type, list)                                                                                \
+    for (const auto& res : resources.list) {                                                                        \
+        appendBinding<ReflectedResourceType::Type>(compiler, msl_compiler.get(), has_webgpu, res, stage, bindings); \
     }
 
         VNE_REFLECT_LIST(eUniformBuffer, uniform_buffers)

@@ -1,12 +1,19 @@
+#pragma once
+/* ---------------------------------------------------------------------
+ * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
+ * Autodoc:   yes
+ * ----------------------------------------------------------------------
+ */
+
 /**
  * @file shader_bundle.h
  * @brief Writes and reads offline @c .vneshader bundles for vnerhi consumption.
- *
- * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
- * Licensed under the Apache License, Version 2.0 (the "License").
  */
-
-#pragma once
 
 #include "shader_artifact.h"
 
@@ -22,10 +29,12 @@ namespace vne::sc {
  */
 struct BundleStageFiles {
     ShaderStage stage = ShaderStage::eVertex;
-    std::string entry_point;
+    std::string entry_point;  ///< SPIR-V / Vulkan entry point
     std::string spirv_file;
     std::string msl_file;
+    std::string msl_entry_point;  ///< MSL entry (SPIRV-Cross may rename main→main0)
     std::string wgsl_file;
+    std::string wgsl_entry_point;  ///< WGSL entry point
 };
 
 /**

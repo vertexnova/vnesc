@@ -36,60 +36,10 @@ set(VNECMAKE_MODULES "${PROJECT_SOURCE_DIR}/cmake/vnecmake/modules")
 if(NOT EXISTS "${VNECMAKE_MODULES}/VneUseDep.cmake")
     message(FATAL_ERROR "vnecmake not found at cmake/vnecmake. Run: git submodule update --init --recursive")
 endif()
-list(APPEND CMAKE_MODULE_PATH "${VNECMAKE_MODULES}")
+list(APPEND CMAKE_MODULE_PATH "${VNECMAKE_MODULES}" "${PROJECT_SOURCE_DIR}/cmake")
 
 include(ProjectSetup)
-
-#==============================================================================
-# Platform Detection
-#==============================================================================
-if(DEFINED VNE_TARGET_PLATFORM)
-    message(STATUS "Using manually specified target platform: ${VNE_TARGET_PLATFORM}")
-else()
-    if(EMSCRIPTEN)
-        set(VNE_TARGET_PLATFORM "Web")
-    elseif(WIN32)
-        set(VNE_TARGET_PLATFORM "Windows")
-    elseif(APPLE)
-        if(VISIONOS OR ${CMAKE_SYSTEM_NAME} STREQUAL "visionOS")
-            set(VNE_TARGET_PLATFORM "visionOS")
-        elseif(IOS OR ${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
-            set(VNE_TARGET_PLATFORM "iOS")
-        else()
-            set(VNE_TARGET_PLATFORM "macOS")
-        endif()
-    elseif(UNIX)
-        if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-            set(VNE_TARGET_PLATFORM "Linux")
-        elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-            set(VNE_TARGET_PLATFORM "Android")
-        else()
-            message(FATAL_ERROR "Unsupported UNIX platform: ${CMAKE_SYSTEM_NAME}")
-        endif()
-    else()
-        message(FATAL_ERROR "Unsupported platform")
-    endif()
-endif()
-message(STATUS "Detected platform: ${VNE_TARGET_PLATFORM}")
-
-#==============================================================================
-# Platform-specific compile definitions
-#==============================================================================
-if(VNE_TARGET_PLATFORM STREQUAL "macOS")
-    add_compile_definitions(VNE_PLATFORM_MACOS)
-elseif(VNE_TARGET_PLATFORM STREQUAL "iOS")
-    add_compile_definitions(VNE_PLATFORM_IOS)
-elseif(VNE_TARGET_PLATFORM STREQUAL "visionOS")
-    add_compile_definitions(VNE_PLATFORM_VISIONOS)
-elseif(VNE_TARGET_PLATFORM STREQUAL "Windows")
-    add_compile_definitions(VNE_PLATFORM_WIN)
-elseif(VNE_TARGET_PLATFORM STREQUAL "Linux")
-    add_compile_definitions(VNE_PLATFORM_LINUX)
-elseif(VNE_TARGET_PLATFORM STREQUAL "Android")
-    add_compile_definitions(VNE_PLATFORM_ANDROID)
-elseif(VNE_TARGET_PLATFORM STREQUAL "Web")
-    add_compile_definitions(VNE_PLATFORM_WEB)
-endif()
+include(CompilerOptions)
 
 #==============================================================================
 # Internal Libraries (deps/internal) - use if already in build, else add
@@ -172,6 +122,7 @@ endif()
 
 option(VNE_SC_TESTS    "Build vnesc test suite (turn OFF when used as submodule)" ON)
 option(VNE_SC_EXAMPLES "Build vnesc example programs (turn OFF when used as submodule)" OFF)
+option(VNE_SC_TOOLS    "Build vnesc CLI tools (e.g. vnesc_shader_compiler)" ON)
 
 # ── Shader compiler backend options ──────────────────────────────────────────
 option(VNE_SC_GLSLANG    "Enable glslang GLSL→SPIR-V front-end (Phase 1, primary)" ON)
@@ -195,32 +146,6 @@ if(ENABLE_COVERAGE AND ENABLE_ASAN)
         "ENABLE_COVERAGE and ENABLE_ASAN cannot both be ON. "
         "Choose one: coverage (gcov/lcov) or ASan/UBSan. "
         "Reconfigure with -DENABLE_COVERAGE=OFF or -DENABLE_ASAN=OFF.")
-endif()
-
-#==============================================================================
-# Coverage Support (gcov/lcov for CI; .gcda files generated when tests run)
-#==============================================================================
-if(ENABLE_COVERAGE)
-    include(FindCoverage OPTIONAL)
-    # Ensure coverage flags are applied (GCC/Clang) so .gcda files are emitted
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    endif()
-endif()
-
-#==============================================================================
-# AddressSanitizer + UndefinedBehaviorSanitizer
-# Linux/macOS only; incompatible with coverage (--coverage + ASan = noise).
-#==============================================================================
-if(ENABLE_ASAN)
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang" AND NOT WIN32)
-        add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-        add_link_options(-fsanitize=address,undefined)
-    else()
-        message(WARNING "ENABLE_ASAN is only supported with GCC/Clang on Linux/macOS — ignoring.")
-    endif()
 endif()
 
 if(VNE_SC_CI)
@@ -276,8 +201,8 @@ elseif(VNE_TARGET_PLATFORM STREQUAL "Web")
     target_compile_definitions(VnescBuildSettings INTERFACE VNE_PLATFORM_WEB)
 endif()
 
-# Shader compiler backends
-include(cmake/VnescDeps.cmake)
+# External shader compiler dependencies (FetchContent)
+include(Dependencies)
 
 #==============================================================================
 # Add Library
@@ -297,6 +222,13 @@ endif()
 #==============================================================================
 if(VNE_SC_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+#==============================================================================
+# Tools
+#==============================================================================
+if(VNE_SC_TOOLS)
+    add_subdirectory(tools/shader_compiler_cli)
 endif()
 
 #==============================================================================
@@ -324,21 +256,4 @@ endif()
 #==============================================================================
 # Installation
 #==============================================================================
-include(GNUInstallDirs)
-set(_vnesc_install_targets vnesc vnesc_interface vnesc_spirvcross vnesc_validator VnescWarnings VnescBuildSettings)
-if(VNE_SC_GLSLANG AND TARGET vnesc_glslang)
-    list(APPEND _vnesc_install_targets vnesc_glslang)
-endif()
-if(VNE_SC_TINT AND TARGET vnesc_tint)
-    list(APPEND _vnesc_install_targets vnesc_tint)
-endif()
-install(TARGETS ${_vnesc_install_targets}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    COMPONENT vnesc
-)
-install(DIRECTORY include/vertexnova/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vertexnova
-    COMPONENT vnesc
-    FILES_MATCHING PATTERN "*.h")
+include(InstallRules)

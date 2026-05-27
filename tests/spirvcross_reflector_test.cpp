@@ -1,6 +1,10 @@
 /* ---------------------------------------------------------------------
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
  * Autodoc:   yes
  * ----------------------------------------------------------------------
  */
@@ -21,7 +25,7 @@ TEST_F(SpirvCrossReflectorTest, VertexShaderWithUboProducesBindings) {
     ASSERT_TRUE(cr.ok());
 
     auto reflector = ShaderCompilerFactory::createReflector();
-    auto rr = reflector->reflect(cr.spirv, ShaderStage::eVertex);
+    auto rr = reflector->reflect(cr.spirv, ShaderStage::eVertex, {CrossTarget::eMSL});
 
     EXPECT_TRUE(rr.ok()) << rr.error;
     EXPECT_FALSE(rr.reflection.bindings.empty());
@@ -31,7 +35,7 @@ TEST_F(SpirvCrossReflectorTest, VertexShaderWithUboProducesBindings) {
             found_ubo = true;
             EXPECT_EQ(b.set, 0u);
             EXPECT_EQ(b.binding, 0u);
-            EXPECT_TRUE(b.backend_slot.populated);
+            EXPECT_TRUE(b.slots.metal.has_value());
         }
     }
     EXPECT_TRUE(found_ubo);

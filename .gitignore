@@ -88,3 +88,10 @@ CMakeLists.txt.user
 .grok/
 .grok/
 .grok/
+
+# Python
+__pycache__/
+
+# Optional local vendor trees (FetchContent is default; see deps/external/README.md)
+deps/external/*/
+!deps/external/README.md

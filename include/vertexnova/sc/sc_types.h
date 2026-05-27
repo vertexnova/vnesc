@@ -1,17 +1,24 @@
+#pragma once
+/* ---------------------------------------------------------------------
+ * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
+ * Autodoc:   yes
+ * ----------------------------------------------------------------------
+ */
+
 /**
  * @file sc_types.h
  * @brief Core types for the vnesc shader compiler library.
- *
  * Defines enumerations, flags, and POD structs used throughout the compilation
  * pipeline.  All types live in the @c vne::sc namespace.
- *
- * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
- * Licensed under the Apache License, Version 2.0 (the "License").
  */
 
-#pragma once
-
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -148,14 +155,23 @@ struct CrossCompileRequest {
 // Reflection types
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Backend-specific binding indices derived from SPIRV-Cross for each resource.
-struct BackendSlot {
-    uint32_t metal_buffer_index = 0;   ///< Metal [[buffer(N)]].
-    uint32_t metal_texture_index = 0;  ///< Metal [[texture(N)]].
-    uint32_t metal_sampler_index = 0;  ///< Metal [[sampler(N)]].
-    uint32_t wgpu_group = 0;           ///< WebGPU @c @group(N).
-    uint32_t wgpu_binding = 0;         ///< WebGPU @c @binding(N).
-    bool populated = false;            ///< @c true when slots have been assigned.
+/// Metal binding indices derived from SPIRV-Cross automatic slot assignment.
+struct MetalResourceSlot {
+    uint32_t buffer = 0;   ///< [[buffer(N)]]
+    uint32_t texture = 0;  ///< [[texture(N)]]
+    uint32_t sampler = 0;  ///< [[sampler(N)]]
+};
+
+/// WebGPU binding indices (mirrors Vulkan set/binding layout after WGSL cross-compile).
+struct WebGpuResourceSlot {
+    uint32_t group = 0;    ///< @group(N)
+    uint32_t binding = 0;  ///< @binding(N)
+};
+
+/// Per-binding backend slot assignments. std::nullopt means that backend was not compiled.
+struct ResourceBackendSlots {
+    std::optional<MetalResourceSlot> metal;    ///< Populated when eMSL was a requested target.
+    std::optional<WebGpuResourceSlot> webgpu;  ///< Populated when eWGSL was a requested target.
 };
 
 /// Classifies a reflected shader resource.
@@ -191,7 +207,7 @@ struct ReflectedBindingInfo {
     uint32_t binding = 0;
     uint32_t array_size = 1;
     ShaderStageFlags stages = ShaderStageFlags::eNone;
-    BackendSlot backend_slot;
+    ResourceBackendSlots slots;
     std::vector<ReflectedStructMember> struct_members;  ///< Non-empty for buffer types.
 };
 

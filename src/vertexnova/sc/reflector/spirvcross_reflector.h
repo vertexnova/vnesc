@@ -1,12 +1,19 @@
+#pragma once
+/* ---------------------------------------------------------------------
+ * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   May 2026
+ *
+ * Autodoc:   yes
+ * ----------------------------------------------------------------------
+ */
+
 /**
  * @file spirvcross_reflector.h
  * @brief SPIRV-Cross based SPIR-V reflector producing typed binding metadata.
- *
- * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
- * Licensed under the Apache License, Version 2.0 (the "License").
  */
-
-#pragma once
 
 #include "vertexnova/sc/shader_reflector.h"
 
@@ -21,7 +28,9 @@ namespace vne::sc {
  */
 class SpirvCrossReflector final : public IShaderReflector {
    public:
-    ReflectResult reflect(const std::vector<uint32_t>& spirv, ShaderStage stage) override;
+    ReflectResult reflect(const std::vector<uint32_t>& spirv,
+                          ShaderStage stage,
+                          const std::vector<CrossTarget>& targets = {}) override;
 };
 
 }  // namespace vne::sc
