@@ -75,7 +75,6 @@ void appendBinding(const spirv_cross::Compiler& compiler,
                    const spirv_cross::CompilerMSL* msl,  // nullptr → MSL not a target
                    bool has_webgpu,
                    const spirv_cross::Resource& res,
-                   vne::sc::ShaderStage stage,
                    std::vector<vne::sc::ReflectedBindingInfo>& out) {
     using namespace vne::sc;
 
@@ -228,7 +227,7 @@ ReflectResult SpirvCrossReflector::reflect(const std::vector<uint32_t>& spirv,
 
 #define VNE_REFLECT_LIST(Type, list)                                                                                \
     for (const auto& res : resources.list) {                                                                        \
-        appendBinding<ReflectedResourceType::Type>(compiler, msl_compiler.get(), has_webgpu, res, stage, bindings); \
+        appendBinding<ReflectedResourceType::Type>(compiler, msl_compiler.get(), has_webgpu, res, bindings); \
     }
 
         VNE_REFLECT_LIST(eUniformBuffer, uniform_buffers)
