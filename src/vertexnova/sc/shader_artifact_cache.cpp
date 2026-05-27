@@ -174,14 +174,19 @@ std::string ShaderArtifactCache::makeKey(const CompileRequest& req,
         hashStr(h, m.name);
         hashStr(h, m.value);
     }
+    bool has_msl = false;
     for (auto t : targets) {
         h ^= static_cast<uint64_t>(t);
         h *= 0x100000001b3ULL;
+        if (t == CrossTarget::eMSL)
+            has_msl = true;
     }
-    h ^= metal_layout.flatten_stride;
-    h *= 0x100000001b3ULL;
-    h ^= metal_layout.buffer_base;
-    h *= 0x100000001b3ULL;
+    if (has_msl) {
+        h ^= metal_layout.flatten_stride;
+        h *= 0x100000001b3ULL;
+        h ^= metal_layout.buffer_base;
+        h *= 0x100000001b3ULL;
+    }
     return toHex(h);
 }
 

@@ -48,7 +48,7 @@ class ShaderArtifactCache {
      *
      * The key encodes source text, file path, entry point, stage, language,
      * optimisation level, preprocessor macros, cross-compilation targets, and
-     * @ref MetalBindingLayout (flatten_stride, buffer_base).
+     * @ref MetalBindingLayout when @c CrossTarget::eMSL is among @p targets.
      */
     static std::string makeKey(const CompileRequest& req,
                                const std::vector<CrossTarget>& targets,
