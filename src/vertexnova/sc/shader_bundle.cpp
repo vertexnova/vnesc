@@ -210,7 +210,7 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
     // Human-readable reflection alongside reflection.bin
     const ProgramReflection& refl = reflection;
 
-    auto stageStr = [](ShaderStage s) -> std::string {
+    auto stage_str = [](ShaderStage s) -> std::string {
         switch (s) {
             case ShaderStage::eVertex:
                 return "vertex";
@@ -227,7 +227,7 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
         }
         return "unknown";
     };
-    auto resourceTypeStr = [](ReflectedResourceType t) -> std::string {
+    auto resource_type_str = [](ReflectedResourceType t) -> std::string {
         switch (t) {
             case ReflectedResourceType::eUniformBuffer:
                 return "uniform_buffer";
@@ -259,7 +259,7 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
         for (const auto& b : stage.bindings) {
             nlohmann::json jb;
             jb["name"] = b.name;
-            jb["type"] = resourceTypeStr(b.type);
+            jb["type"] = resource_type_str(b.type);
             if (b.array_size != 1)
                 jb["array_size"] = b.array_size;
 
@@ -334,7 +334,7 @@ bool writeShaderBundle(const ShaderArtifact& artifact, const std::filesystem::pa
                                     {"z", stage.workgroup_size.z}};
         }
 
-        jstages[stageStr(stage.stage)] = std::move(js);
+        jstages[stage_str(stage.stage)] = std::move(js);
     }
     jrefl["stages"] = std::move(jstages);
     writeTextFile(bundle_dir / "reflection.json", jrefl.dump(2));

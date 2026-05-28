@@ -58,7 +58,7 @@ class ShaderArtifactCache {
      * @brief Looks up a cached artifact by key.
      * @returns The deserialized @ref StageArtifact, or @c std::nullopt on miss.
      */
-    std::optional<StageArtifact> lookup(const std::string& key) const;
+    [[nodiscard]] std::optional<StageArtifact> lookup(const std::string& key) const;
 
     /**
      * @brief Serialises and stores @p artifact under @p key.
@@ -73,7 +73,7 @@ class ShaderArtifactCache {
    private:
     std::string cache_dir_;
 
-    std::string artifactPath(const std::string& key) const;
+    [[nodiscard]] std::string artifactPath(const std::string& key) const;
 };
 
 }  // namespace vne::sc

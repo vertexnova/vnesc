@@ -48,7 +48,7 @@ struct ShaderPipelineSpec {
 
     /// Converts this spec into a @ref PipelineBuildDesc for @ref IShaderPipelineBuilder.
     /// @param spec_dir Directory of the spec file; used to resolve include_paths.
-    PipelineBuildDesc toBuildDesc(const std::filesystem::path& spec_dir = {}) const;
+    [[nodiscard]] PipelineBuildDesc toBuildDesc(const std::filesystem::path& spec_dir = {}) const;
 };
 
 /**

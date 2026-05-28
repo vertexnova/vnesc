@@ -41,7 +41,7 @@ inline uint32_t metalSmp(uint32_t set, uint32_t binding, const vne::sc::MetalBin
 std::vector<vne::sc::ReflectedStructMember> reflectStructMembers(const spirv_cross::Compiler& compiler,
                                                                  const spirv_cross::SPIRType& block_type) {
     std::vector<vne::sc::ReflectedStructMember> members;
-    const uint32_t member_count = static_cast<uint32_t>(block_type.member_types.size());
+    const auto member_count = static_cast<uint32_t>(block_type.member_types.size());
     members.reserve(member_count);
 
     for (uint32_t i = 0; i < member_count; ++i) {

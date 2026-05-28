@@ -27,7 +27,7 @@ class TintCrossCompiler final : public IShaderCrossCompiler {
     TintCrossCompiler();
     ~TintCrossCompiler() override;
 
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     CrossCompileResult crossCompile(const CrossCompileRequest& req) override;
 
    private:

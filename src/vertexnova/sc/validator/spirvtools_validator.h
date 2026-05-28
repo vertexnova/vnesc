@@ -19,7 +19,7 @@ namespace vne::sc {
  */
 class SpirvToolsValidator final : public IShaderValidator {
    public:
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     ValidationResult validate(const std::vector<uint32_t>& spirv) override;
 };
 

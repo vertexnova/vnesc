@@ -28,7 +28,7 @@ namespace vne::sc {
  */
 class NoopValidator final : public IShaderValidator {
    public:
-    bool isAvailable() const noexcept override { return true; }
+    [[nodiscard]] bool isAvailable() const noexcept override { return true; }
 
     ValidationResult validate(const std::vector<uint32_t>& /*spirv*/) override {
         ValidationResult r;

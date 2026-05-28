@@ -27,7 +27,7 @@ namespace vne::sc {
  */
 class DxcFrontEnd final : public IShaderFrontEnd {
    public:
-    bool isAvailable() const noexcept override { return false; }
+    [[nodiscard]] bool isAvailable() const noexcept override { return false; }
 
     CompileResult compile(const CompileRequest& req) override {
         (void)req;

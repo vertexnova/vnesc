@@ -55,7 +55,7 @@ struct PipelineBuildResult {
     ShaderArtifact artifact;
     std::string error;
 
-    bool ok() const noexcept { return succeeded(code); }
+    [[nodiscard]] bool ok() const noexcept { return succeeded(code); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

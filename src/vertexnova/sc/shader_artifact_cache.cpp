@@ -27,29 +27,31 @@ namespace vne::sc {
 // ── FNV-1a 64-bit hash ────────────────────────────────────────────────────────
 namespace {
 
+constexpr uint64_t kFnv1a64Prime = 0x100000001b3ULL;
+constexpr uint64_t kFnv1a64Offset = 0xcbf29ce484222325ULL;
+constexpr int kCacheKeyHexWidth = 16;
+
 uint64_t fnv1a64(const void* data, size_t len) noexcept {
-    const uint64_t FNV_PRIME = 0x100000001b3ULL;
-    const uint64_t FNV_OFFSET = 0xcbf29ce484222325ULL;
-    uint64_t hash = FNV_OFFSET;
+    uint64_t hash = kFnv1a64Offset;
     const auto* ptr = static_cast<const uint8_t*>(data);
     for (size_t i = 0; i < len; ++i) {
         hash ^= ptr[i];
-        hash *= FNV_PRIME;
+        hash *= kFnv1a64Prime;
     }
     return hash;
 }
 
 void hashStr(uint64_t& h, const std::string& s) noexcept {
     h ^= fnv1a64(s.data(), s.size());
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
     const size_t len = s.size();
     h ^= fnv1a64(&len, sizeof(len));
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
 }
 
 std::string toHex(uint64_t v) {
     std::ostringstream os;
-    os << std::hex << std::setfill('0') << std::setw(16) << v;
+    os << std::hex << std::setfill('0') << std::setw(kCacheKeyHexWidth) << v;
     return os.str();
 }
 
@@ -86,7 +88,7 @@ struct Reader {
         is.read(s.data(), static_cast<std::streamsize>(len));
         return s;
     }
-    bool ok() const { return is.good() || is.eof(); }
+    [[nodiscard]] bool ok() const { return is.good() || is.eof(); }
 };
 
 // ── StageArtifact binary format ───────────────────────────────────────────────
@@ -158,18 +160,18 @@ ShaderArtifactCache::ShaderArtifactCache(std::string cache_dir)
 std::string ShaderArtifactCache::makeKey(const CompileRequest& req,
                                          const std::vector<CrossTarget>& targets,
                                          const MetalBindingLayout& metal_layout) {
-    uint64_t h = 0xcbf29ce484222325ULL;
+    uint64_t h = kFnv1a64Offset;
     hashStr(h, req.source);
     hashStr(h, req.file_path);
     hashStr(h, req.entry_point);
     h ^= static_cast<uint64_t>(req.stage);
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
     h ^= static_cast<uint64_t>(req.lang);
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
     h ^= static_cast<uint64_t>(req.opt_level);
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
     h ^= req.glsl_version;
-    h *= 0x100000001b3ULL;
+    h *= kFnv1a64Prime;
     for (const auto& m : req.macros) {
         hashStr(h, m.name);
         hashStr(h, m.value);
@@ -177,15 +179,15 @@ std::string ShaderArtifactCache::makeKey(const CompileRequest& req,
     bool has_msl = false;
     for (auto t : targets) {
         h ^= static_cast<uint64_t>(t);
-        h *= 0x100000001b3ULL;
+        h *= kFnv1a64Prime;
         if (t == CrossTarget::eMSL)
             has_msl = true;
     }
     if (has_msl) {
         h ^= metal_layout.flatten_stride;
-        h *= 0x100000001b3ULL;
+        h *= kFnv1a64Prime;
         h ^= metal_layout.buffer_base;
-        h *= 0x100000001b3ULL;
+        h *= kFnv1a64Prime;
     }
     return toHex(h);
 }

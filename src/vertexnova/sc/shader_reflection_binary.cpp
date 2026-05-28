@@ -34,23 +34,23 @@ struct Writer {
 
 struct Reader {
     std::istringstream is;
-    const size_t data_size_;
+    const size_t data_size;
 
     explicit Reader(const std::string& data)
         : is(data, std::ios::binary)
-        , data_size_(data.size()) {}
+        , data_size(data.size()) {}
 
     size_t remaining() {
         const auto pos = is.tellg();
         if (pos < 0) {
             return 0;
         }
-        return data_size_ - static_cast<size_t>(pos);
+        return data_size - static_cast<size_t>(pos);
     }
 
     void fail() { is.setstate(std::ios::failbit); }
 
-    void require_bytes(size_t n) {
+    void requireBytes(size_t n) {
         if (!ok()) {
             return;
         }
@@ -63,7 +63,7 @@ struct Reader {
         if (!ok()) {
             return 0;
         }
-        require_bytes(1);
+        requireBytes(1);
         if (!ok()) {
             return 0;
         }
@@ -79,7 +79,7 @@ struct Reader {
         if (!ok()) {
             return 0;
         }
-        require_bytes(4);
+        requireBytes(4);
         if (!ok()) {
             return 0;
         }
@@ -91,7 +91,7 @@ struct Reader {
         return v;
     }
 
-    uint32_t bounded_count(uint32_t max_count) {
+    uint32_t boundedCount(uint32_t max_count) {
         const uint32_t count = u32();
         if (!ok()) {
             return 0;
@@ -116,7 +116,7 @@ struct Reader {
             fail();
             return {};
         }
-        require_bytes(len);
+        requireBytes(len);
         if (!ok()) {
             return {};
         }
@@ -244,7 +244,7 @@ bool readReflectedBindingInfo(Reader& r, vne::sc::ReflectedBindingInfo& b) {
     if (!r.ok() || !readResourceBackendSlots(r, b.slots)) {
         return false;
     }
-    const uint32_t member_count = r.bounded_count(kMaxStructMemberCount);
+    const uint32_t member_count = r.boundedCount(kMaxStructMemberCount);
     if (!r.ok()) {
         return false;
     }
@@ -274,7 +274,7 @@ bool readStageReflection(Reader& r, vne::sc::StageReflection& sr) {
         return false;
     }
     sr.stage = static_cast<vne::sc::ShaderStage>(r.u8());
-    const uint32_t binding_count = r.bounded_count(kMaxBindingCount);
+    const uint32_t binding_count = r.boundedCount(kMaxBindingCount);
     if (!r.ok()) {
         return false;
     }
@@ -325,7 +325,7 @@ bool deserializeProgramReflection(const std::string& data, ProgramReflection& ou
     if (!r.ok() || version != kReflectionBinaryVersion) {
         return false;
     }
-    const uint32_t count = r.bounded_count(kMaxProgramStageCount);
+    const uint32_t count = r.boundedCount(kMaxProgramStageCount);
     if (!r.ok()) {
         return false;
     }
