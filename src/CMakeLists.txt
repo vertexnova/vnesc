@@ -35,11 +35,12 @@ if(VNE_SC_GLSLANG)
         glslang-default-resource-limits)
     target_compile_definitions(vnesc_glslang PUBLIC VNE_SC_GLSLANG_ENABLED)
     # Match glslang (ENABLE_RTTI=OFF in Dependencies.cmake). FileIncluder derives from
-    # glslang::TShader::Includer; mixed RTTI causes undefined typeinfo at link time.
+    # glslang::TShader::Includer. PUBLIC so vnesc/tests/tools also omit RTTI and
+    # std::make_shared<GlslangFrontEnd>() does not reference missing typeinfo.
     if(MSVC)
-        target_compile_options(vnesc_glslang PRIVATE /GR-)
+        target_compile_options(vnesc_glslang PUBLIC /GR-)
     else()
-        target_compile_options(vnesc_glslang PRIVATE -fno-rtti)
+        target_compile_options(vnesc_glslang PUBLIC -fno-rtti)
     endif()
     set_target_properties(vnesc_glslang PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
     add_library(vne::sc::glslang ALIAS vnesc_glslang)
