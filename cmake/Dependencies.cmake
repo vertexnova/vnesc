@@ -171,6 +171,10 @@ endif()
 # ══════════════════════════════════════════════════════════════════════════════
 if(VNE_SC_TINT)
     set(DAWN_BUILD_SAMPLES           OFF CACHE BOOL "" FORCE)
+    # Dawn can either bootstrap dependencies via Chromium's depot_tools/gclient
+    # flow or via its lightweight `tools/fetch_dawn_dependencies.py` script.
+    # In headless environments this often avoids interactive credential prompts.
+    set(DAWN_FETCH_DEPENDENCIES     ON CACHE BOOL "" FORCE)
     set(DAWN_ENABLE_VULKAN           OFF CACHE BOOL "" FORCE)
     set(DAWN_ENABLE_METAL            OFF CACHE BOOL "" FORCE)
     set(DAWN_ENABLE_D3D11            OFF CACHE BOOL "" FORCE)
@@ -203,9 +207,11 @@ if(VNE_SC_TINT)
     set(_vne_sc_saved_build_type "${CMAKE_BUILD_TYPE}")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
     FetchContent_Declare(dawn
-        GIT_REPOSITORY https://dawn.googlesource.com/dawn
-        GIT_TAG        chromium/6723
-        GIT_SHALLOW    TRUE)
+        GIT_REPOSITORY       https://dawn.googlesource.com/dawn
+        GIT_TAG              chromium/6723
+        GIT_SHALLOW          TRUE
+        GIT_SUBMODULES       ""
+        GIT_SUBMODULES_RECURSE FALSE)
     FetchContent_MakeAvailable(dawn)
     set(CMAKE_BUILD_TYPE "${_vne_sc_saved_build_type}" CACHE STRING "" FORCE)
     message(STATUS "[vnesc] Dawn/Tint → FetchContent chromium/6723 (Release build)")
