@@ -224,12 +224,7 @@ std::optional<ShaderPipelineSpec> loadShaderPipelineSpec(const std::string& path
     }
     std::ostringstream buf;
     buf << file.rdbuf();
-    auto spec = parseShaderPipelineSpecJson(buf.str());
-    if (spec) {
-        // Pass the spec file's directory so toBuildDesc can resolve include_paths.
-        spec->toBuildDesc(std::filesystem::path(path).parent_path());
-    }
-    return spec;
+    return parseShaderPipelineSpecJson(buf.str());
 }
 
 }  // namespace vne::sc
