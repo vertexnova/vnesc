@@ -24,6 +24,11 @@
 
 namespace vne::sc {
 
+inline constexpr uint32_t kDefaultGlslVersion = 450u;
+inline constexpr uint32_t kDefaultMslVersion = 30000u;
+inline constexpr uint32_t kMetalBindingFlattenStrideDefault = 32u;
+inline constexpr uint32_t kMetalBindingBufferBaseDefault = 16u;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shader stage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,11 +137,20 @@ struct CompileRequest {
     ShaderStage stage = ShaderStage::eVertex;
     SourceLang lang = SourceLang::eGLSL;
     OptLevel opt_level = OptLevel::ePerformance;
-    std::vector<ShaderMacro> macros;        ///< Preprocessor definitions.
-    std::vector<std::string> include_dirs;  ///< Directories searched for @c #include.
-    bool debug_info = false;                ///< Embed debug information in SPIR-V.
-    bool validate = true;                   ///< Validate SPIR-V after generation.
-    uint32_t glsl_version = 450;            ///< GLSL version number (e.g. 450 → @c #version 450).
+    std::vector<ShaderMacro> macros;              ///< Preprocessor definitions.
+    std::vector<std::string> include_dirs;        ///< Directories searched for @c #include.
+    bool debug_info = false;                      ///< Embed debug information in SPIR-V.
+    bool validate = true;                         ///< Validate SPIR-V after generation.
+    uint32_t glsl_version = kDefaultGlslVersion;  ///< GLSL version (e.g. 450 → @c #version 450).
+};
+
+/// Metal buffer-index layout configuration.
+/// Controls how Vulkan descriptor set/binding pairs map to MSL [[buffer(N)]],
+/// [[texture(N)]], and [[sampler(N)]] indices.
+/// Defaults reproduce the vnerhi MetalResourceBinder layout.
+struct MetalBindingLayout {
+    uint32_t flatten_stride = kMetalBindingFlattenStrideDefault;  ///< set * stride + binding.
+    uint32_t buffer_base = kMetalBindingBufferBaseDefault;        ///< [[buffer(N)]] base offset.
 };
 
 /**
@@ -146,9 +160,10 @@ struct CrossCompileRequest {
     std::vector<uint32_t> spirv;  ///< Input SPIR-V binary.
     CrossTarget target = CrossTarget::eMSL;
     ShaderStage stage = ShaderStage::eVertex;
-    uint32_t msl_version = 30000;  ///< MSL version (e.g. 30000 → Metal 3.0).
-    uint32_t glsl_version = 450;
+    uint32_t msl_version = kDefaultMslVersion;  ///< MSL version (e.g. 30000 → Metal 3.0).
+    uint32_t glsl_version = kDefaultGlslVersion;
     bool fix_msl_fragment_signature = true;  ///< Align fragment stage_in with vertex output.
+    MetalBindingLayout metal_layout;         ///< MSL binding offsets (defaults match vnerhi).
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

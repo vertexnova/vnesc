@@ -58,8 +58,8 @@ struct GlslangProcessLifetime {
 };
 
 GlslangProcessLifetime& glslangProcessLifetime() {
-    static GlslangProcessLifetime lifetime;
-    return lifetime;
+    static GlslangProcessLifetime s_lifetime;
+    return s_lifetime;
 }
 
 bool readBinaryFile(std::ifstream& file, std::string& out) {
@@ -145,18 +145,21 @@ class FileIncluder : public glslang::TShader::Includer {
                 return loadFile(p.string(), header_name);
             }
         }
-        return new IncludeResult(header_name, "// not found", 13, nullptr);
+        static constexpr const char kNotFound[] = "// not found";
+        return new IncludeResult(header_name, kNotFound, sizeof(kNotFound) - 1, nullptr);
     }
 
     IncludeResult* loadFile(const std::string& path, const char* header_name) {
         std::ifstream f(path, std::ios::binary);
         if (!f.is_open()) {
-            return new IncludeResult(header_name, "// open failed", 14, nullptr);
+            static constexpr const char kOpenFailed[] = "// open failed";
+            return new IncludeResult(header_name, kOpenFailed, sizeof(kOpenFailed) - 1, nullptr);
         }
         auto* content = new std::string();
         if (!readBinaryFile(f, *content)) {
             delete content;
-            return new IncludeResult(header_name, "// read failed", 14, nullptr);
+            static constexpr const char kReadFailed[] = "// read failed";
+            return new IncludeResult(header_name, kReadFailed, sizeof(kReadFailed) - 1, nullptr);
         }
         return new IncludeResult(header_name, content->data(), content->size(), content);
     }
@@ -179,8 +182,8 @@ std::string buildPreamble(const std::vector<vne::sc::ShaderMacro>& macros) {
 
 namespace vne::sc {
 
-GlslangFrontEnd::GlslangFrontEnd() {
-    initialized_ = glslangProcessLifetime().acquire();
+GlslangFrontEnd::GlslangFrontEnd()
+    : initialized_(glslangProcessLifetime().acquire()) {
     if (!initialized_) {
         VNE_LOG_ERROR << "GlslangFrontEnd: glslang::InitializeProcess() failed";
     } else {
@@ -245,7 +248,8 @@ CompileResult GlslangFrontEnd::compile(const CompileRequest& req) {
     shader.setEntryPoint(req.entry_point.c_str());
     shader.setSourceEntryPoint(req.entry_point.c_str());
 
-    shader.setEnvInput(glslang::EShSourceGlsl, esh_lang, glslang::EShClientVulkan, 100);
+    static constexpr int kGlslangDefaultInputVersion = 100;
+    shader.setEnvInput(glslang::EShSourceGlsl, esh_lang, glslang::EShClientVulkan, kGlslangDefaultInputVersion);
     shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
     shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
 

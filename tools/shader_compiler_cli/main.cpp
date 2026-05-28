@@ -87,8 +87,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    vne::sc::PipelineBuildDesc desc = manifest->toBuildDesc(
-        std::filesystem::path(manifest_path).parent_path());
+    vne::sc::PipelineBuildDesc desc = manifest->toBuildDesc(std::filesystem::path(manifest_path).parent_path());
     if (!cache_dir.empty()) {
         desc.use_cache = true;
         desc.cache_dir = cache_dir;
@@ -110,8 +109,7 @@ int main(int argc, char** argv) {
     std::cout << "Bundle written to: " << bundle_path << "\n";
     std::cout << "  Stages: " << result.artifact.stages.size() << "\n";
     for (const auto& stage : result.artifact.stages) {
-        std::cout << "  - stage " << static_cast<int>(stage.stage)
-                  << " | spirv=" << stage.spirv.size() << " words"
+        std::cout << "  - stage " << static_cast<int>(stage.stage) << " | spirv=" << stage.spirv.size() << " words"
                   << " | cross=" << stage.cross_compiled.size() << " target(s)\n";
     }
     return 0;

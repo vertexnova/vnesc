@@ -63,7 +63,7 @@ struct CompileResult {
     std::vector<std::string> warnings;
 
     /// @returns @c true when the compilation produced valid SPIR-V.
-    bool ok() const noexcept { return succeeded(code); }
+    [[nodiscard]] bool ok() const noexcept { return succeeded(code); }
 };
 
 /// Actual WebGPU `@group`/`@binding` assignment for a named resource in the emitted WGSL.
@@ -82,7 +82,7 @@ struct CrossCompileResult {
     /// For WGSL targets: actual @group/@binding in emitted WGSL (may differ from SPIR-V set/binding).
     std::vector<WgpuBindingRemap> wgpu_binding_remap;
 
-    bool ok() const noexcept { return succeeded(code); }
+    [[nodiscard]] bool ok() const noexcept { return succeeded(code); }
 };
 
 /// Result of a SPIR-V validation check.
@@ -90,7 +90,7 @@ struct ValidationResult {
     ResultCode code = ResultCode::eValidationFailed;
     std::string error;
 
-    bool ok() const noexcept { return succeeded(code); }
+    [[nodiscard]] bool ok() const noexcept { return succeeded(code); }
 };
 
 /// Result of a SPIR-V reflection pass.
@@ -99,7 +99,7 @@ struct ReflectResult {
     StageReflection reflection;  ///< Populated binding and push-constant data; valid only when @c ok().
     std::string error;
 
-    bool ok() const noexcept { return succeeded(code); }
+    [[nodiscard]] bool ok() const noexcept { return succeeded(code); }
 };
 
 }  // namespace vne::sc

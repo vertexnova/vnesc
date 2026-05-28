@@ -34,6 +34,14 @@ if(VNE_SC_GLSLANG)
         SPIRV
         glslang-default-resource-limits)
     target_compile_definitions(vnesc_glslang PUBLIC VNE_SC_GLSLANG_ENABLED)
+    # Match glslang (ENABLE_RTTI=OFF in Dependencies.cmake). FileIncluder derives from
+    # glslang::TShader::Includer. PUBLIC so vnesc/tests/tools also omit RTTI and
+    # std::make_shared<GlslangFrontEnd>() does not reference missing typeinfo.
+    if(MSVC)
+        target_compile_options(vnesc_glslang PUBLIC /GR-)
+    else()
+        target_compile_options(vnesc_glslang PUBLIC -fno-rtti)
+    endif()
     set_target_properties(vnesc_glslang PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
     add_library(vne::sc::glslang ALIAS vnesc_glslang)
 endif()
@@ -94,7 +102,7 @@ target_link_libraries(vnesc PUBLIC
     vnesc_spirvcross
     vnesc_validator)
 if(VNE_SC_GLSLANG)
-    target_link_libraries(vnesc PRIVATE vnesc_glslang)
+    target_link_libraries(vnesc PUBLIC vnesc_glslang)
     target_compile_definitions(vnesc PUBLIC VNE_SC_GLSLANG_ENABLED)
 endif()
 if(VNE_SC_TINT)

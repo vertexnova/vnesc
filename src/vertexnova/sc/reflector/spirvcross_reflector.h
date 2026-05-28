@@ -26,11 +26,12 @@ namespace vne::sc {
  * Metal buffer/texture/sampler slot assignments and WebGPU group/binding indices
  * derived from SPIRV-Cross's automatic MSL resource binding API.
  */
-class SpirvCrossReflector final : public IShaderReflector {
+class SpirvCrossReflector final : public IShaderReflector {  // NOLINT(readability-identifier-naming)
    public:
     ReflectResult reflect(const std::vector<uint32_t>& spirv,
                           ShaderStage stage,
-                          const std::vector<CrossTarget>& targets = {}) override;
+                          const std::vector<CrossTarget>& targets = {},
+                          MetalBindingLayout metal_layout = {}) override;
 };
 
 }  // namespace vne::sc

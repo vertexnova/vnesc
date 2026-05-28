@@ -36,7 +36,7 @@ class IShaderFrontEnd {
      * A front-end may be unavailable if its backing library was not compiled in
      * or failed to initialise.
      */
-    virtual bool isAvailable() const noexcept = 0;
+    [[nodiscard]] virtual bool isAvailable() const noexcept = 0;
 
     /**
      * @brief Compiles shader source into SPIR-V.

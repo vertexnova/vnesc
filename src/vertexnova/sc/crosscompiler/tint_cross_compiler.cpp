@@ -12,6 +12,7 @@
 #include "tint_cross_compiler.h"
 
 #include "vertexnova/logging/logging.h"
+
 #ifdef VNE_SC_TINT_ENABLED
 #include "src/tint/api/tint.h"
 #include "src/tint/lang/spirv/reader/common/options.h"
@@ -25,7 +26,7 @@
 
 namespace {
 CREATE_VNE_LOGGER_CATEGORY("vne.sc.tint");
-}  // namespace
+}
 namespace vne::sc {
 
 TintCrossCompiler::TintCrossCompiler() {

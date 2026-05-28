@@ -30,7 +30,7 @@ class IShaderCrossCompiler {
     /**
      * @brief Returns @c true when this cross-compiler can process requests.
      */
-    virtual bool isAvailable() const noexcept = 0;
+    [[nodiscard]] virtual bool isAvailable() const noexcept = 0;
 
     /**
      * @brief Translates the SPIR-V in @p req to the requested target language.

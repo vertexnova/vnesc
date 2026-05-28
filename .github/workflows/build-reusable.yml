@@ -193,8 +193,9 @@ jobs:
         shell: bash
         run: |
           echo "--- .gcno files (produced at compile time) ---"
-          find "$BUILD_DIR" -name "*.gcno" | head -20
-          GCNO_COUNT=$(find "$BUILD_DIR" -name "*.gcno" | wc -l)
+          # head closes the pipe early; ignore SIGPIPE (141) from find when pipefail is on.
+          find "$BUILD_DIR" -name "*.gcno" 2>/dev/null | head -20 || true
+          GCNO_COUNT=$(find "$BUILD_DIR" -name "*.gcno" 2>/dev/null | wc -l)
           echo "Total .gcno files: $GCNO_COUNT"
           if [[ "$GCNO_COUNT" -eq 0 ]]; then
             echo "::error::No .gcno files found — binary was not compiled with --coverage. Check ENABLE_COVERAGE and build type."
@@ -219,8 +220,8 @@ jobs:
         shell: bash
         run: |
           echo "--- .gcda files (produced at test runtime) ---"
-          find "$BUILD_DIR" -name "*.gcda" | head -20
-          GCDA_COUNT=$(find "$BUILD_DIR" -name "*.gcda" | wc -l)
+          find "$BUILD_DIR" -name "*.gcda" 2>/dev/null | head -20 || true
+          GCDA_COUNT=$(find "$BUILD_DIR" -name "*.gcda" 2>/dev/null | wc -l)
           echo "Total .gcda files: $GCDA_COUNT"
           if [[ "$GCDA_COUNT" -eq 0 ]]; then
             echo "::error::No .gcda files found after running tests — tests may not have executed or binary not linked with --coverage."
@@ -267,12 +268,12 @@ jobs:
         if: runner.os == 'Linux' && inputs.enable_coverage
         run: |
           lcov --capture --directory "$BUILD_DIR" --output-file coverage.info \
-            --ignore-errors mismatch,unused,empty
+            --ignore-errors mismatch,unused,empty,source
           lcov --remove coverage.info \
             '/usr/*' '*/tests/*' '*/deps/external/*' '*/deps/internal/*' \
             '*/_deps/*' '*/googletest/*' '*/googlemock/*' \
-            --output-file coverage.info --ignore-errors mismatch,unused
-          lcov --list coverage.info --ignore-errors mismatch,unused
+            --output-file coverage.info --ignore-errors mismatch,unused,source
+          lcov --list coverage.info --ignore-errors mismatch,unused,source
 
       - name: Generate HTML coverage report
         if: runner.os == 'Linux' && inputs.enable_coverage

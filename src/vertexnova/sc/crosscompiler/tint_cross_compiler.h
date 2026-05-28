@@ -27,11 +27,13 @@ class TintCrossCompiler final : public IShaderCrossCompiler {
     TintCrossCompiler();
     ~TintCrossCompiler() override;
 
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     CrossCompileResult crossCompile(const CrossCompileRequest& req) override;
 
    private:
+#ifdef VNE_SC_TINT_ENABLED
     bool initialized_ = false;
+#endif
 };
 
 }  // namespace vne::sc

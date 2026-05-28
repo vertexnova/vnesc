@@ -47,15 +47,18 @@ class ShaderArtifactCache {
      * @brief Derives a deterministic cache key from a compile request.
      *
      * The key encodes source text, file path, entry point, stage, language,
-     * optimisation level, preprocessor macros, and cross-compilation targets.
+     * optimisation level, preprocessor macros, cross-compilation targets, and
+     * @ref MetalBindingLayout when @c CrossTarget::eMSL is among @p targets.
      */
-    static std::string makeKey(const CompileRequest& req, const std::vector<CrossTarget>& targets);
+    static std::string makeKey(const CompileRequest& req,
+                               const std::vector<CrossTarget>& targets,
+                               const MetalBindingLayout& metal_layout = {});
 
     /**
      * @brief Looks up a cached artifact by key.
      * @returns The deserialized @ref StageArtifact, or @c std::nullopt on miss.
      */
-    std::optional<StageArtifact> lookup(const std::string& key) const;
+    [[nodiscard]] std::optional<StageArtifact> lookup(const std::string& key) const;
 
     /**
      * @brief Serialises and stores @p artifact under @p key.
@@ -70,7 +73,7 @@ class ShaderArtifactCache {
    private:
     std::string cache_dir_;
 
-    std::string artifactPath(const std::string& key) const;
+    [[nodiscard]] std::string artifactPath(const std::string& key) const;
 };
 
 }  // namespace vne::sc

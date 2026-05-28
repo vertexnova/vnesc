@@ -30,7 +30,7 @@ class GlslangFrontEnd final : public IShaderFrontEnd {
     GlslangFrontEnd();
     ~GlslangFrontEnd() override;
 
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     CompileResult compile(const CompileRequest& req) override;
 
    private:

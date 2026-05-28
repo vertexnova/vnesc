@@ -28,7 +28,7 @@ namespace vne::sc {
  */
 class SpirvCrossCrossCompiler final : public IShaderCrossCompiler {
    public:
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     CrossCompileResult crossCompile(const CrossCompileRequest& req) override;
 
     /**

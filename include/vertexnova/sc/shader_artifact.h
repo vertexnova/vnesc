@@ -48,7 +48,7 @@ struct StageArtifact {
      * @brief Finds cross-compiled output for the given target.
      * @returns Pointer to the matching entry, or @c nullptr if not present.
      */
-    const CrossCompiledSource* findCrossCompiled(CrossTarget target) const noexcept {
+    [[nodiscard]] const CrossCompiledSource* findCrossCompiled(CrossTarget target) const noexcept {
         for (const auto& cc : cross_compiled) {
             if (cc.target == target) {
                 return &cc;
@@ -70,7 +70,7 @@ struct ShaderArtifact {
      * @brief Finds the artifact for the given pipeline stage.
      * @returns Pointer to the matching entry, or @c nullptr if not present.
      */
-    const StageArtifact* findStage(ShaderStage stage) const noexcept {
+    [[nodiscard]] const StageArtifact* findStage(ShaderStage stage) const noexcept {
         for (const auto& s : stages) {
             if (s.stage == stage) {
                 return &s;
@@ -85,7 +85,7 @@ struct ShaderArtifact {
      * The returned object owns its own copy of the data and can be passed to
      * the engine's shader loader without keeping the artifact alive.
      */
-    ProgramReflection assembleReflection() const noexcept {
+    [[nodiscard]] ProgramReflection assembleReflection() const noexcept {
         ProgramReflection pr;
         pr.stages.reserve(stages.size());
         for (const auto& s : stages) {
@@ -97,7 +97,7 @@ struct ShaderArtifact {
     /**
      * @brief Returns @c true when all stages have non-empty SPIR-V.
      */
-    bool isValid() const noexcept {
+    [[nodiscard]] bool isValid() const noexcept {
         if (stages.empty()) {
             return false;
         }

@@ -38,7 +38,7 @@ class IShaderValidator {
      *
      * Returns @c false for the no-op implementation.
      */
-    virtual bool isAvailable() const noexcept = 0;
+    [[nodiscard]] virtual bool isAvailable() const noexcept = 0;
 
     /**
      * @brief Validates @p spirv.

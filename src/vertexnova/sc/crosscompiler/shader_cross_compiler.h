@@ -41,12 +41,12 @@ class ShaderCrossCompiler final : public IShaderCrossCompiler {
     ShaderCrossCompiler();
     ~ShaderCrossCompiler() override;
 
-    bool isAvailable() const noexcept override;
+    [[nodiscard]] bool isAvailable() const noexcept override;
     CrossCompileResult crossCompile(const CrossCompileRequest& req) override;
 
    private:
     /// @returns SPIRV-Cross for non-WGSL targets; Tint for WGSL when compiled and available.
-    IShaderCrossCompiler* backendFor(CrossTarget target) const noexcept;
+    [[nodiscard]] IShaderCrossCompiler* backendFor(CrossTarget target) const noexcept;
 
     std::unique_ptr<SpirvCrossCrossCompiler> spirvcross_;
 #ifdef VNE_SC_TINT_ENABLED

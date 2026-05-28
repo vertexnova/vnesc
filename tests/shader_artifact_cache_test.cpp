@@ -49,6 +49,35 @@ TEST_F(ShaderArtifactCacheTest, DifferentSourceProducesDifferentKey) {
     EXPECT_NE(ShaderArtifactCache::makeKey(a, targets), ShaderArtifactCache::makeKey(b, targets));
 }
 
+TEST_F(ShaderArtifactCacheTest, DifferentMetalLayoutProducesDifferentKey) {
+    CompileRequest req;
+    req.source = "void main() {}";
+    std::vector<CrossTarget> targets = {CrossTarget::eMSL};
+    MetalBindingLayout defaults;
+    MetalBindingLayout custom_buffer = defaults;
+    custom_buffer.buffer_base = defaults.buffer_base + 1u;
+
+    MetalBindingLayout custom_stride = defaults;
+    custom_stride.flatten_stride = defaults.flatten_stride + 1u;
+
+    EXPECT_NE(ShaderArtifactCache::makeKey(req, targets, defaults),
+              ShaderArtifactCache::makeKey(req, targets, custom_buffer));
+    EXPECT_NE(ShaderArtifactCache::makeKey(req, targets, defaults),
+              ShaderArtifactCache::makeKey(req, targets, custom_stride));
+}
+
+TEST_F(ShaderArtifactCacheTest, MetalLayoutIgnoredWhenMslNotAmongTargets) {
+    CompileRequest req;
+    req.source = "void main() {}";
+    std::vector<CrossTarget> targets = {CrossTarget::eWGSL, CrossTarget::eGLSL};
+    MetalBindingLayout defaults;
+    MetalBindingLayout custom = defaults;
+    custom.buffer_base = defaults.buffer_base + 1u;
+    custom.flatten_stride = defaults.flatten_stride + 1u;
+
+    EXPECT_EQ(ShaderArtifactCache::makeKey(req, targets, defaults), ShaderArtifactCache::makeKey(req, targets, custom));
+}
+
 TEST_F(ShaderArtifactCacheTest, StoreAndLookupRoundTrip) {
     namespace fs = std::filesystem;
     auto tmp = makeUniqueTempPath("vnesc_shader_artifact_cache_roundtrip");
